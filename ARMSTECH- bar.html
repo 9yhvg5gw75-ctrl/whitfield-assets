@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMSTECH - Entrance</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    outline: none;
+  }
+
+  html, body {
+    background: #000;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.9s ease;
+  }
+
+  .scene.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .scene img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+    filter: brightness(0.95) contrast(1.05);
+  }
+
+  .hotspot, .door-hotspot, a, button, div {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    background: transparent;
+  }
+
+  .prompt-tag {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(216, 236, 255, 0.55);
+    pointer-events: none;
+  }
+
+  #scene-denied {
+    display: block;
+  }
+
+  .return-control {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    padding: 10px 20px;
+    border: 1px solid rgba(216, 236, 255, 0.4);
+    color: rgba(216, 236, 255, 0.75);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .fade-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.55s ease;
+    z-index: 50;
+  }
+
+  .fade-overlay.active {
+    opacity: 1;
+  }
+
+  .return-home {
+    position: fixed;
+    bottom: 10px;
+    right: 14px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgba(216, 236, 255, 0.35);
+    text-decoration: none;
+    z-index: 40;
+  }
+
+  .return-home:hover {
+    color: rgba(216, 236, 255, 0.6);
+  }
+
+  /* Landscape-lock: these tours are strictly landscape-only */
+  .portrait-lock {
+    display: none;
+  }
+
+  @media (orientation: portrait) {
+    .stage, .fade-overlay, .return-home {
+      display: none !important;
+    }
+    .portrait-lock {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      inset: 0;
+      background: #0a0a0a;
+      color: #b5453f;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      z-index: 100;
+    }
+
+    .portrait-lock svg {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 22px;
+      stroke: #b5453f;
+      animation: rotateHint 2.2s ease-in-out infinite;
+    }
+
+    @keyframes rotateHint {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-90deg); }
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="portrait-lock">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7" y="2" width="10" height="20" rx="2"></rect>
+    <line x1="9" y1="4.5" x2="12" y2="4.5"></line>
+    <circle cx="12" cy="19" r="0.6" fill="#b5453f"></circle>
+  </svg>
+  <div style="font-size:15px; letter-spacing:3px; margin-bottom:10px;">CLEARANCE INTERFACE LOCKED</div>
+  <div style="font-size:12px; letter-spacing:1px; text-transform:none; color:#8a7a78;">This facility requires landscape orientation.<br>Please rotate your device.</div>
+</div>
+
+<div class="stage">
+
+  <div class="scene active" id="scene-entrance">
+    <img id="entranceImg" src="https://9yhvg5gw75-ctrl.github.io/whitfield-assets/armstech-entrance.jpg" alt="ArmsTech entrance">
+    <div class="hotspot door" data-l="40" data-t="43" data-w="17" data-h="42" onclick="showDenied()"></div>
+    <div class="prompt-tag">Approach the entrance</div>
+  </div>
+
+  <div class="scene" id="scene-denied">
+    <img id="deniedImg" src="https://9yhvg5gw75-ctrl.github.io/whitfield-assets/armstech-access-denied.jpg" alt="Access denied">
+    <div class="return-control" onclick="goTo('scene-entrance')">Return</div>
+  </div>
+
+</div>
+
+<div class="fade-overlay" id="fadeOverlay"></div>
+
+<a class="return-home" href="https://wapublishing.co.uk">&larr; Return to WA Publishing</a>
+
+<script>
+  function positionHotspots(imgId, sceneId, selector) {
+    const img = document.getElementById(imgId);
+    const scene = document.getElementById(sceneId);
+    if (!img || !img.naturalWidth) return;
+
+    const containerW = scene.clientWidth;
+    const containerH = scene.clientHeight;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+
+    const scale = Math.min(containerW / naturalW, containerH / naturalH);
+    const renderedW = naturalW * scale;
+    const renderedH = naturalH * scale;
+    const offsetX = (containerW - renderedW) / 2;
+    const offsetY = (containerH - renderedH) / 2;
+
+    scene.querySelectorAll(selector).forEach(cell => {
+      const l = parseFloat(cell.dataset.l) / 100 * naturalW;
+      const t = parseFloat(cell.dataset.t) / 100 * naturalH;
+      const w = parseFloat(cell.dataset.w) / 100 * naturalW;
+      const h = parseFloat(cell.dataset.h) / 100 * naturalH;
+
+      cell.style.left = (offsetX + l * scale) + 'px';
+      cell.style.top = (offsetY + t * scale) + 'px';
+      cell.style.width = (w * scale) + 'px';
+      cell.style.height = (h * scale) + 'px';
+    });
+  }
+
+  function positionDoor() {
+    positionHotspots('entranceImg', 'scene-entrance', '.hotspot.door');
+  }
+
+  window.addEventListener('resize', positionDoor);
+
+  function goTo(targetId) {
+    const overlay = document.getElementById('fadeOverlay');
+    const scenes = document.querySelectorAll('.scene');
+    overlay.classList.add('active');
+    setTimeout(() => {
+      scenes.forEach(s => s.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      setTimeout(() => { overlay.classList.remove('active'); }, 60);
+    }, 550);
+  }
+
+  function showDenied() {
+    goTo('scene-denied');
+  }
+
+  const entranceImgEl = document.getElementById('entranceImg');
+  if (entranceImgEl.complete) {
+    positionDoor();
+  } else {
+    entranceImgEl.addEventListener('load', positionDoor);
+  }
+</script>
+
+</body>
+</html>
