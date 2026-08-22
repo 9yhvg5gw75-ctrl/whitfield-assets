@@ -1,0 +1,58 @@
+/* ==========================================================================
+   LANDSCAPE-LOCK — shared, reusable across every interactive tour.
+   LOCKED STANDARD — Aug 2026. Do not alter without explicit instruction.
+
+   Host this file on GitHub Pages and link to it from every tour's <head>:
+
+   <link rel="stylesheet" href="https://9yhvg5gw75-ctrl.github.io/whitfield-assets/landscape-lock.css">
+   <script src="https://9yhvg5gw75-ctrl.github.io/whitfield-assets/landscape-lock.js"></script>
+
+   Do not edit per-tour. Update this one file and every tour updates with it.
+   ========================================================================== */
+
+.portrait-lock {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  /* Hides whichever main wrapper the tour uses - covers every naming
+     convention seen across the site's tours so far. Add more here if a
+     future tour uses a different wrapper name. */
+  #stage, .stage, .fade-overlay, .return-home {
+    display: none !important;
+  }
+
+  .portrait-lock {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    color: #C9A24A;
+    font-family: 'JetBrains Mono', monospace;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    z-index: 100;
+  }
+
+  .portrait-lock .pl-message {
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .portrait-lock svg {
+    width: 40px;
+    height: 40px;
+    margin-top: 20px;
+    stroke: #C9A24A;
+    animation: rotateHint 2.2s ease-in-out infinite;
+  }
+
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+  }
+}
