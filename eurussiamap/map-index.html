@@ -574,19 +574,17 @@
 
   .city-buttons {
     position: absolute;
-    left: 50%;
-    bottom: 8%;
-    transform: translateX(-50%);
+    top: 6%;
+    left: 6%;
     display: flex;
     gap: 0.8rem;
   }
 
   #london-locked-view .city-buttons {
     position: fixed !important;
-    bottom: 24px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    top: auto !important;
+    top: 24px !important;
+    left: 24px !important;
+    bottom: auto !important;
     z-index: 9999 !important;
   }
 
@@ -646,9 +644,9 @@
   }
 
   .phoenix-btn {
-    background: transparent;
+    background: #ffffff;
     border: 1px solid #ffffff;
-    color: #ffffff;
+    color: #000000;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -657,54 +655,41 @@
     width: 10rem;
     text-align: center;
     cursor: pointer;
-    transition: background 0.3s ease, color 0.3s ease;
+    transition: opacity 0.3s ease;
     white-space: nowrap;
   }
 
   .phoenix-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    opacity: 0.85;
   }
 
   /* Central Eurussia buttons — purple accent */
   #phoenix-view .phoenix-btn {
+    background: #E28FD4;
     border-color: #E28FD4;
-    color: #E28FD4;
-  }
-
-  #phoenix-view .phoenix-btn:hover {
-    background: rgba(226, 143, 212, 0.15);
+    color: #000000;
   }
 
   /* Krashnov (Eastern) — blue accent */
   #krashnov-view .phoenix-btn {
+    background: #7FB8E0;
     border-color: #7FB8E0;
-    color: #7FB8E0;
-  }
-
-  #krashnov-view .phoenix-btn:hover {
-    background: rgba(127, 184, 224, 0.15);
+    color: #000000;
   }
 
   /* Greentown (Western) — green accent */
   #greentown-view .phoenix-btn {
+    background: #8FD49A;
     border-color: #8FD49A;
-    color: #8FD49A;
-  }
-
-  #greentown-view .phoenix-btn:hover {
-    background: rgba(143, 212, 154, 0.15);
+    color: #000000;
   }
 
   /* Old Republic — silver/grey accent */
   #london-view .phoenix-btn,
   #london-locked-view .phoenix-btn {
+    background: #BFBFBF;
     border-color: #BFBFBF;
-    color: #BFBFBF;
-  }
-
-  #london-view .phoenix-btn:hover,
-  #london-locked-view .phoenix-btn:hover {
-    background: rgba(191, 191, 191, 0.15);
+    color: #000000;
   }
 </style>
 <style>
@@ -1363,7 +1348,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Krashnov is a harsh eastern settlement built in the shadow of a mountain range, permanently blanketed in snow. It stands as a fortress-like city, home to a heavy and constant military presence overseen for generations by the Romanov family. Most of the region's actual industry lies beyond the capital itself, spread across the vassal states and provinces that answer to it.</p>
+            <p class="pd-entry-desc">Krashnov is the aristocratic centre of the east and the seat of Romanov power. Wealth and influence are concentrated within the capital, where generations of upper-class families have lived alongside the ruling dynasty. Heavy industry is largely absent from the city itself, pushed instead into the provinces beyond. The result is a wealthy political centre dependent upon communities far removed from the prosperity found within its boundaries.</p>
           </div>
         </div>
 
@@ -1373,7 +1358,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Located within Krashnov, Romanov Estate is the principal residence of the Romanov family. The family has lived and governed from within its walls for as long as the city has stood, giving it a central place in the political history of Eastern Eurussia.</p>
+            <p class="pd-entry-desc">The Romanov Estate has been home to the ruling family for generations. Located within Krashnov, it remains their principal residence and the private centre of a dynasty that has controlled the region for much of its history. Successive generations have been raised within its grounds before inheriting their responsibilities. Its continued occupation makes it one of the oldest surviving symbols of Romanov rule.</p>
           </div>
         </div>
 
@@ -1383,7 +1368,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Krashnov Province surrounds the capital, and it's here — not in Krashnov itself — that the region's real industrial sprawl lives. Factories, freight lines, and the jobs that keep the east running stretch across its territory, tying the province's fortunes directly to the capital it encircles.</p>
+            <p class="pd-entry-desc">Krashnov Province begins beyond the capital and forms the industrial heartlands surrounding it. Factories, workshops and production sites dominate large areas, employing much of the local population. Goods manufactured here are distributed throughout the surrounding territories and into central Krashnov. Life in the province consequently bears little resemblance to the aristocratic city it surrounds.</p>
           </div>
         </div>
 
@@ -1393,7 +1378,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Slate Rock is an Eastern Eurussian manufacturing settlement set on a plateau. The metals pulled from its ground are melted down and reforged into everything from structural framing to bullets, feeding the industry that runs the rest of the east.</p>
+            <p class="pd-entry-desc">Huge mining operations dominate Slate Rock, with extraction sites extending across much of the province. Generations of workers have made their living beneath the ground, removing the raw materials required by factories elsewhere. Freight operations carry what is extracted away for processing, leaving mining as the defining feature of the local economy. Entire communities have developed around the demands of the industry.</p>
           </div>
         </div>
 
@@ -1403,7 +1388,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Longwood sits surrounded by green fields and heavy woodland. It was founded to help feed Krashnov, but these days most of what it produces goes straight to the Romanovs and the K-Militia — leaving ordinary citizens waiting on shipments from Greentown instead, a pattern that's become common across many of the east's vassal states.</p>
+            <p class="pd-entry-desc">Longwood is an agricultural province where farming dominates both the landscape and local economy. Large quantities of food are produced each year, much of which is claimed by central Krashnov rather than remaining within local communities. K-Militia personnel maintain a heavy presence across the farmland and settlements. The relationship between those producing the food and those controlling its distribution has long shaped life here.</p>
           </div>
         </div>
 
@@ -1413,7 +1398,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Suln commands the biggest furnaces and the largest rail system in the east, with freight arriving constantly to feed them. Outside the capital, it's the next most populous province in the region. Unlike much of the east, Suln's people are Romanov loyalists through and through — one of the few provinces genuinely content with the administration.</p>
+            <p class="pd-entry-desc">Suln contains the largest furnaces in the region and operates on a scale matched by few other production centres. Raw materials arrive through an extensive transport network before being processed and turned into finished goods. Road and rail connections then carry those products onwards to their destinations. The constant movement of freight and operation of the furnaces dominate the settlement.</p>
           </div>
         </div>
 
@@ -1423,7 +1408,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Cedar Town is a lumber camp settlement, ringed by forests that seem to have no end. Its markets run huge and steady off the timber trade, making it one of the more genuinely profitable towns in the east — profitable enough to warrant a fairly sized K-Militia presence and a fortified stronghold to protect it.</p>
+            <p class="pd-entry-desc">Dense forests surround Cedar Town, supporting extensive logging operations and providing employment for much of the population. Timber harvested from the surrounding land is processed and transported out in large quantities. A major K-Militia stronghold also sits within the province, bringing a substantial military presence to an otherwise resource-driven community. Logging and the militia remain the two dominant forces in local life.</p>
           </div>
         </div>
 
@@ -1433,7 +1418,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Shades Reach is rebel country. Its people have never made peace with Romanov rule, and constant skirmishes with the K-Militia are a fact of life here. When dissent grows too far, the province has been razed outright — a warning the Romanovs have used more than once.</p>
+            <p class="pd-entry-desc">Poverty is widespread throughout Shades Reach, a province that has received little attention or investment from Krashnov. Poor living conditions and continued neglect have created deep resentment among many of its communities. Residents are unusually willing to speak openly about the problems they face and criticise those responsible for them. That outspoken population has given Shades Reach a reputation unlike most territories under Romanov control.</p>
           </div>
         </div>
 
@@ -1443,7 +1428,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Rooks Point is the easternmost city in Eurussia, reachable only by mountain tunnels cut through the range that isolates it. Its proximity to the eastern sea has made it a fishing town at heart, and its harbour also serves as a terminal for Greentown's ships and navy.</p>
+            <p class="pd-entry-desc">Rooks Point is a coastal fishing town that also serves as a military port. Fishing supports much of the civilian population while military vessels, personnel and supplies regularly move through its harbour. Underground road tunnels provide the principal connections inland, carrying traffic beneath the surrounding terrain. Its unusual infrastructure allows the isolated town to remain connected throughout the year.</p>
           </div>
         </div>
 
@@ -1453,7 +1438,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Eastern Command is one of two hubs covering the Trench's eastern stretch, run by Mary, and the most isolated command post on the frontier — miles from anything, with nothing but open ground between it and the nearest settlement.</p>
+            <p class="pd-entry-desc">Managed by Mary, Eastern Command is one of two hubs overseeing this section of the Trench. The compound sits alone on a plateau, making it the most isolated of the major command posts. Distance from surrounding settlements places greater pressure on supply and personnel stationed there for extended periods. Its exposed position gives the installation a markedly different character from the other hubs.</p>
           </div>
         </div>
 
@@ -1463,7 +1448,7 @@
             <span class="pd-box-icon">+</span>
           </button>
           <div class="pd-box-body">
-            <p class="pd-entry-desc">Pacific Command sits buried in jungle, the least conventional of the Trench's hubs and all the harder to approach for it. Run by Thomaz, it doubles as a watch post for Greentown's navy — the last set of eyes on anything trying to slip in off the water before it reaches the coast.</p>
+            <p class="pd-entry-desc">Pacific Command stands between dense jungle and the coast, with vegetation extending both ahead of and behind the compound. Below, a naval port allows vessels from the Greentown navy to dock during operations in the area. Personnel stationed here contend with both the surrounding jungle and the nearby waters. Few other sections of the Trench combine land and naval activity so closely.</p>
           </div>
         </div>
 
