@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMSTECH - Entrance</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+
+  html, body {
+    background: #000;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.9s ease;
+  }
+
+  .scene.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .scene img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+    filter: brightness(0.95) contrast(1.05);
+  }
+
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    background: transparent;
+  }
+
+  .prompt-tag {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(216, 236, 255, 0.55);
+    pointer-events: none;
+  }
+
+  /* Access denied scene - now shows a pre-made graphic instead of CSS text */
+  #scene-denied {
+    background: #000;
+  }
+
+  .return-control {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(216, 236, 255, 0.6);
+    border: 1px solid rgba(216, 236, 255, 0.25);
+    padding: 10px 22px;
+    cursor: pointer;
+  }
+
+  .return-control:hover {
+    color: #d8ecff;
+    border-color: rgba(216, 236, 255, 0.5);
+  }
+
+  .fade-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.55s ease;
+    z-index: 50;
+  }
+
+  .fade-overlay.active {
+    opacity: 1;
+  }
+
+
+  .lasers{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+  .alarm-light{ position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at center, rgba(255,0,0,0) 40%, rgba(255,0,0,0.38) 100%); }
+  #scene-denied.alarm .alarm-light{ animation:alarm-flash 0.92s linear infinite; }
+  @keyframes alarm-flash{ 0%{ opacity:1; } 62%{ opacity:0.9; } 70%,100%{ opacity:0.1; } }
+  @media (prefers-reduced-motion: reduce){ #scene-denied.alarm .alarm-light{ animation:none; opacity:0.6; } }
+  /* ===== STANDING FIXES ===== */
+  #rotate-lock{ position:fixed; inset:0; z-index:1000; background:#0a0a0a; display:none; flex-direction:column; align-items:center; justify-content:center; gap:22px; }
+  #rotate-lock .rl-text{ font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:3px; color:#C9A24A; text-transform:uppercase; text-align:center; padding:0 24px; }
+  #rotate-lock svg{ animation:rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock{ 0%,100%{ transform:rotate(0deg); } 40%,60%{ transform:rotate(-90deg); } }
+  .wa-return{ position:fixed; right:18px; bottom:14px; z-index:60; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1.5px; color:#8c8272; text-decoration:none; outline:none; }
+  .wa-return:hover{ color:#C9A24A; }
+  @media (orientation:portrait){ #rotate-lock{ display:flex; } .wa-return{ display:none; } }
+</style>
+</head>
+<body>
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+
+<div class="stage">
+
+  <div class="scene active" id="scene-entrance">
+    <img id="entranceImg" src="image-01.jpg" alt="Armstech entrance">
+
+    <svg class="lasers" viewBox="0 0 1535 1024" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <defs>
+        <filter id="laserGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <radialGradient id="spotGrad"><stop offset="0" stop-color="#ff5a4a" stop-opacity="0.95"/><stop offset="0.45" stop-color="#ff1a1a" stop-opacity="0.45"/><stop offset="1" stop-color="#ff0000" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="gunL"><image href="image-02.png" x="185" y="470" width="143" height="115"/></g>
+      <g id="gunR"><image href="image-03.png" x="1192" y="468" width="141" height="117"/></g>
+      <g filter="url(#laserGlow)">
+        <line id="beamL" stroke="#ff2a2a" stroke-width="1.6" stroke-opacity="0.75"/>
+        <ellipse id="spotL" rx="16" ry="6" fill="url(#spotGrad)"/>
+        <circle id="dotL" r="3.5" fill="#ff3b3b"/>
+        <line id="beamR" stroke="#ff2a2a" stroke-width="1.6" stroke-opacity="0.75"/>
+        <ellipse id="spotR" rx="16" ry="6" fill="url(#spotGrad)"/>
+        <circle id="dotR" r="3.5" fill="#ff3b3b"/>
+      </g>
+    </svg>
+    <div class="hotspot door" data-l="40" data-t="43" data-w="17" data-h="42" onclick="showDenied()"></div>
+    <div class="prompt-tag">Approach the entrance</div>
+    <a class="wa-return" href="https://wapublishing.co.uk" target="_top">← Return to WA Publishing</a>
+  </div>
+
+  <div class="scene" id="scene-denied">
+    <img id="deniedImg" src="image-04.jpg" alt="Access restricted">
+    <div class="alarm-light"></div>
+    <div class="return-control" onclick="Alarm.stop(); goTo('scene-entrance')">Return</div>
+  </div>
+
+</div>
+
+<div class="fade-overlay" id="fadeOverlay"></div>
+
+<script>
+  function positionHotspots(imgId, sceneId, selector) {
+    const img = document.getElementById(imgId);
+    const scene = document.getElementById(sceneId);
+    if (!img || !img.naturalWidth) return;
+
+    const containerW = scene.clientWidth;
+    const containerH = scene.clientHeight;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+
+    const scale = Math.min(containerW / naturalW, containerH / naturalH);
+    const renderedW = naturalW * scale;
+    const renderedH = naturalH * scale;
+    const offsetX = (containerW - renderedW) / 2;
+    const offsetY = (containerH - renderedH) / 2;
+
+    scene.querySelectorAll(selector).forEach(cell => {
+      const l = parseFloat(cell.dataset.l) / 100 * naturalW;
+      const t = parseFloat(cell.dataset.t) / 100 * naturalH;
+      const w = parseFloat(cell.dataset.w) / 100 * naturalW;
+      const h = parseFloat(cell.dataset.h) / 100 * naturalH;
+
+      cell.style.left = (offsetX + l * scale) + 'px';
+      cell.style.top = (offsetY + t * scale) + 'px';
+      cell.style.width = (w * scale) + 'px';
+      cell.style.height = (h * scale) + 'px';
+    });
+  }
+
+  function positionDoor() {
+    positionHotspots('entranceImg', 'scene-entrance', '.hotspot.door');
+  }
+
+  window.addEventListener('resize', positionDoor);
+
+  function goTo(targetId) {
+    const overlay = document.getElementById('fadeOverlay');
+    const scenes = document.querySelectorAll('.scene');
+    overlay.classList.add('active');
+    setTimeout(() => {
+      scenes.forEach(s => s.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      setTimeout(() => { overlay.classList.remove('active'); }, 60);
+    }, 550);
+  }
+
+  function showDenied() {
+    Alarm.start(0.55);   // the screen switches 0.55s after the tap, so the klaxon starts as it appears
+    goTo('scene-denied');
+  }
+
+  const entranceImgEl = document.getElementById('entranceImg');
+  if (entranceImgEl.complete) {
+    positionDoor();
+  } else {
+    entranceImgEl.addEventListener('load', positionDoor);
+  }
+
+  /* Turret guns: barrel and laser move as one. The beam runs straight out of the barrel
+     and lands where that line meets the road. */
+  (function(){
+    const ROAD_Y = 975;
+    const guns = [
+      {g:'gunL', beam:'beamL', spot:'spotL', dot:'dotL', pivot:[202,491], muzzle:[298,559], period:6500, a0:9, a1:-9},
+      {g:'gunR', beam:'beamR', spot:'spotR', dot:'dotR', pivot:[1317,494], muzzle:[1216,559], period:7300, a0:-9, a1:9}
+    ].map(o=>Object.assign(o,{gEl:document.getElementById(o.g), bEl:document.getElementById(o.beam), sEl:document.getElementById(o.spot), dEl:document.getElementById(o.dot)}));
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function frame(t){
+      guns.forEach((o,k)=>{
+        const s = still ? 0.5 : (1 - Math.cos(2*Math.PI*(t/o.period)))/2;
+        const ang = o.a0 + (o.a1-o.a0)*s, rad = ang*Math.PI/180, c=Math.cos(rad), sn=Math.sin(rad);
+        const [px,py]=o.pivot, dx=o.muzzle[0]-px, dy=o.muzzle[1]-py;
+        const mx = px + dx*c - dy*sn, my = py + dx*sn + dy*c;          // muzzle after rotation
+        const vx = dx*c - dy*sn, vy = dx*sn + dy*c;                      // barrel direction
+        const k2 = (ROAD_Y - my) / vy, sx = mx + vx*k2, sy = ROAD_Y;    // where the barrel's line hits the road
+        o.gEl.setAttribute('transform',`rotate(${ang.toFixed(2)} ${px} ${py})`);
+        o.bEl.setAttribute('x1',mx); o.bEl.setAttribute('y1',my); o.bEl.setAttribute('x2',sx); o.bEl.setAttribute('y2',sy);
+        o.sEl.setAttribute('cx',sx); o.sEl.setAttribute('cy',sy);
+        o.dEl.setAttribute('cx',mx); o.dEl.setAttribute('cy',my);
+        o.dEl.setAttribute('opacity', still ? 1 : (0.75 + 0.25*Math.sin(t/260 + k*2)).toFixed(2));
+      });
+      if(!still) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  /* Alarm: a military base klaxon with the red beacon flashing.
+     It keeps going until the visitor presses Return. */
+  const Alarm = (function(){
+    let ctx=null, oscs=[], env=null, sched=null, pendingLight=null, nextT=0, running=false;
+    const ON=0.62, GAP=0.30, CYCLE=ON+GAP, BASE=[[150,'square'],[178,'sawtooth'],[151.5,'square']];
+    const scene=()=>document.getElementById('scene-denied');
+    function distortion(amount){
+      const n=1024, curve=new Float32Array(n);
+      for(let i=0;i<n;i++){ const x=i*2/n-1; curve[i]=(1+amount)*x/(1+amount*Math.abs(x)); }
+      return curve;
+    }
+    function blast(t){
+      oscs.forEach((o,k)=>{ const f=BASE[k][0];
+        o.frequency.setValueAtTime(f*0.82, t);
+        o.frequency.exponentialRampToValueAtTime(f, t+0.09);
+        o.frequency.setValueAtTime(f, t+ON-0.06);
+        o.frequency.exponentialRampToValueAtTime(f*0.9, t+ON);
+      });
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(1, t+0.03);
+      env.gain.setValueAtTime(1, t+ON-0.05);
+      env.gain.exponentialRampToValueAtTime(0.0001, t+ON);
+    }
+    function stop(){
+      running=false;
+      clearInterval(sched); clearTimeout(pendingLight);
+      if(env && ctx){ try{ env.gain.cancelScheduledValues(ctx.currentTime); env.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.02); }catch(e){} }
+      oscs.forEach(o=>{ try{ o.stop(ctx.currentTime+0.1); }catch(e){} });
+      oscs=[]; env=null;
+      scene().classList.remove('alarm');
+    }
+    function start(delay){
+      delay = delay || 0;
+      stop(); running=true;
+      pendingLight = setTimeout(()=>{ if(running) scene().classList.add('alarm'); }, delay*1000);
+      try{
+        ctx = ctx || new (window.AudioContext||window.webkitAudioContext)();   // created on the tap so phones allow sound
+        if(ctx.state==='suspended') ctx.resume();
+        const shaper = ctx.createWaveShaper(); shaper.curve = distortion(18); shaper.oversample='4x';
+        const body = ctx.createBiquadFilter(); body.type='peaking'; body.frequency.value=420; body.gain.value=6; body.Q.value=1.2;
+        const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800; lp.Q.value=0.7;
+        env = ctx.createGain(); env.gain.value=0.0001;
+        const master = ctx.createGain(); master.gain.value=0.22;
+        shaper.connect(body); body.connect(lp); lp.connect(env); env.connect(master); master.connect(ctx.destination);
+        const t0 = ctx.currentTime + delay;
+        oscs = BASE.map(([f,type])=>{ const o=ctx.createOscillator(); o.type=type; o.frequency.value=f;
+          const g=ctx.createGain(); g.gain.value=0.33; o.connect(g); g.connect(shaper); o.start(ctx.currentTime); return o; });
+        nextT = t0;
+        const pump = ()=>{ while(running && env && nextT < ctx.currentTime + 1.2){ blast(nextT); nextT += CYCLE; } };
+        pump(); sched = setInterval(pump, 200);
+      }catch(e){}
+    }
+    // stay quiet while the page is hidden; pick up again if they come back to the warning
+    document.addEventListener('visibilitychange', ()=>{
+      if(!ctx) return;
+      if(document.hidden) ctx.suspend(); else if(running) ctx.resume();
+    });
+    return {start, stop};
+  })();
+</script>
+
+</body>
+</html>
