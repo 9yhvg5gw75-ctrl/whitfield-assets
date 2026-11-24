@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#0b0908;">
+<head>
+<meta charset="UTF-8">
+<title>E.I.D. Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0b0908;
+    --panel:#121010;
+    --gold-a:#ddb862;
+    --gold-b:#c9a24a;
+    --gold-c:#a3801f;
+    --gold-d:#7a5a1e;
+    --rule:#4a3a1e;
+    --ivory:#ece4d3;
+    --ivory-dim:#8c8272;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    background:var(--black);
+    color:var(--ivory);
+    font-family:'JetBrains Mono', monospace;
+    height:100%;
+    overflow:hidden;
+  }
+  .gold-text{
+    font-family:'JetBrains Mono', monospace;
+    background:linear-gradient(180deg, var(--gold-a) 0%, var(--gold-b) 30%, var(--gold-c) 55%, var(--gold-b) 72%, var(--gold-d) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 1px 0 rgba(255,224,150,0.3)) drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+  }
+
+  /* ===== TERMINAL / COMPUTERISED LAYER ===== */
+  .scanlines{
+    position:fixed; inset:0;
+    pointer-events:none;
+    z-index:50;
+    background:repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode:overlay;
+  }
+  .scanlines::after{
+    content:"";
+    position:absolute; left:0; right:0;
+    height:120px;
+    background:linear-gradient(180deg, rgba(201,162,74,0.06), transparent);
+    animation:scan-sweep 6s linear infinite;
+  }
+  @keyframes scan-sweep{
+    0%{ top:-120px; }
+    100%{ top:100%; }
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  .cursor-blink{
+    display:inline-block;
+    animation:blink 1s step-start infinite;
+    color:var(--gold-b);
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .term-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 14px;
+    background:#0e0d0c;
+    border:1px solid var(--rule);
+    border-bottom:1px solid var(--gold-c);
+  }
+  .term-dot{ width:9px; height:9px; border-radius:50%; background:#3a3530; }
+  .term-dot.live{ background:var(--gold-b); box-shadow:0 0 5px var(--gold-b); }
+  .term-bar-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:1px;
+    color:var(--ivory-dim);
+    margin-left:8px;
+    flex:1;
+  }
+  .term-bar-status{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:1px;
+    color:var(--gold-b);
+  }
+
+  .decrypt-overlay{
+    position:fixed; inset:0;
+    background:var(--black);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+  }
+  .decrypt-overlay.active{ display:flex; }
+  .decrypt-console{
+    width:min(460px, 88vw);
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    line-height:1.9;
+  }
+  .decrypt-log{ min-height:140px; }
+  .decrypt-line{
+    color:var(--ivory-dim);
+    opacity:0;
+    display:flex;
+    justify-content:space-between;
+  }
+  .decrypt-line.show{ opacity:1; }
+  .decrypt-line .ok{ color:var(--gold-b); }
+  .decrypt-line .denied-x{ color:#c0463a; }
+  .decrypt-percent{
+    color:var(--gold-b);
+    text-align:right;
+    margin-top:14px;
+    margin-bottom:6px;
+    letter-spacing:1px;
+  }
+  .decrypt-bar{
+    width:100%; height:3px;
+    background:var(--rule);
+    position:relative;
+    overflow:hidden;
+  }
+  .decrypt-bar-fill{
+    position:absolute; left:0; top:0; bottom:0;
+    width:0%;
+    background:linear-gradient(90deg, var(--gold-c), var(--gold-b));
+    transition:width 0.15s linear;
+  }
+
+  /* ===== CLASSIFIED / ACCESS DENIED ===== */
+  #screen-classified{ flex-direction:column; text-align:center; }
+  .denied-box{
+    border:1px solid #c0463a;
+    padding:40px 36px;
+    max-width:420px;
+  }
+  .denied-title{
+    color:#c0463a;
+    font-size:26px;
+    letter-spacing:4px;
+    font-weight:600;
+    margin-bottom:16px;
+  }
+  .denied-sub{
+    color:var(--ivory-dim);
+    font-size:12px;
+    letter-spacing:2px;
+    margin-bottom:24px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--rule);
+  }
+  .denied-code{
+    font-size:13px;
+    color:var(--ivory-dim);
+    margin-bottom:6px;
+  }
+  .denied-unlock{
+    font-size:13px;
+    color:var(--gold-b);
+    margin-top:18px;
+    line-height:1.7;
+  }
+  .denied-back{
+    margin-top:28px;
+    font-size:12px;
+    letter-spacing:3px;
+    color:var(--ivory-dim);
+    cursor:pointer;
+  }
+  .denied-back:hover{ color:var(--gold-b); }
+
+  /* ===== SCREEN MANAGEMENT ===== */
+  .screen{
+    position:fixed; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:var(--black);
+  }
+  .screen.active{ display:flex; }
+
+  /* ===== LAPTOP SCREEN ===== */
+  #screen-laptop{ flex-direction:column; }
+  .laptop-wrap{
+    width:min(720px, 90vw);
+    cursor:pointer;
+    transition:transform 0.25s ease;
+  }
+  .laptop-wrap:hover{ transform:scale(1.015); }
+  .laptop-body{
+    background:#1a1a1a;
+    border-radius:14px 14px 4px 4px;
+    padding:18px 18px 6px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+  }
+  .laptop-screen{
+    background:#000;
+    border-radius:4px;
+    aspect-ratio:16/10;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+  .laptop-screen .eid-mark{
+    font-size:clamp(38px, 7vw, 64px);
+    font-weight:700;
+    letter-spacing:8px;
+  }
+  .laptop-rule{
+    width:60%;
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold-b), transparent);
+  }
+  .laptop-rule.top{ margin-bottom:20px; }
+  .laptop-rule.bottom{ margin-top:20px; }
+  .laptop-base{
+    height:16px;
+    background:linear-gradient(180deg, #2a2a2a, #161616);
+    border-radius:0 0 10px 10px;
+    margin-top:2px;
+  }
+  .laptop-hint{
+    margin-top:28px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:4px;
+    color:var(--ivory-dim);
+    text-align:center;
+  }
+
+  /* ===== DIRECTORY SCREEN ===== */
+  #screen-directory{ flex-direction:column; }
+  .directory-panel{
+    width:min(640px, 92vw);
+    border:1px solid var(--gold-c);
+    padding:40px;
+    position:relative;
+    background:var(--panel);
+  }
+  .directory-panel::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px solid rgba(201,162,74,0.25);
+    pointer-events:none;
+  }
+  .directory-title{
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    letter-spacing:5px;
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .directory-sub{
+    text-align:center;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--ivory-dim);
+    font-family:'JetBrains Mono', monospace;
+    margin-bottom:30px;
+  }
+  .directory-list{ display:flex; flex-direction:column; gap:2px; }
+  .directory-group-label{
+    font-size:11px;
+    letter-spacing:3px;
+    color:var(--gold-b);
+    margin:22px 0 8px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--gold-c);
+  }
+  .directory-group-label:first-of-type{ margin-top:0; }
+  .directory-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 12px;
+    border-bottom:1px solid var(--rule);
+    cursor:pointer;
+    transition:background 0.15s ease, padding-left 0.15s ease;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .directory-row:hover{
+    background:rgba(201,162,74,0.06);
+    padding-left:20px;
+  }
+  .directory-row:last-child{ border-bottom:none; }
+  .directory-code{
+    font-size:13px;
+    letter-spacing:1px;
+    color:var(--gold-b);
+  }
+  .directory-name{
+    font-size:15px;
+    letter-spacing:2px;
+    color:var(--ivory);
+  }
+  .directory-arrow{ color:var(--gold-c); font-size:14px; }
+  .back-hint{
+    margin-top:24px;
+    text-align:center;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--ivory-dim);
+    font-family:'JetBrains Mono', monospace;
+    cursor:pointer;
+  }
+  .back-hint:hover{ color:var(--gold-b); }
+
+  /* ===== DOSSIER SCREEN ===== */
+  #screen-dossier{ align-items:flex-start; overflow-y:auto; padding:32px 16px; }
+  .dossier-wrap{
+    width:min(1200px, 100%);
+    margin:0 auto;
+    border:1px solid var(--gold-c);
+    background:var(--panel);
+    position:relative;
+  }
+  .dossier-wrap::before{
+    content:"";
+    position:absolute; inset:6px;
+    border:1px solid rgba(201,162,74,0.2);
+    pointer-events:none;
+  }
+  .dossier-top{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+  }
+  .col{ padding:26px; border-right:1px solid var(--rule); }
+  .col:last-child{ border-right:none; }
+
+  .section-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    letter-spacing:4px;
+    margin-bottom:18px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--rule);
+  }
+
+  .section-label-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--rule);
+  }
+  .section-label-row .section-label{
+    margin-bottom:0;
+    padding-bottom:0;
+    border-bottom:none;
+  }
+  .tl-inline{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .tl-inline-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    color:var(--ivory-dim);
+  }
+  .tl-inline-word{
+    font-size:13px;
+    letter-spacing:2px;
+    font-weight:600;
+    padding:3px 9px;
+    border:1px solid currentColor;
+  }
+  .tl-inline-word.tl-safe{ color:var(--ivory); }
+  .tl-inline-word.tl-danger{ color:#c0463a; }
+  .subsection{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--gold-b);
+    margin:18px 0 10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--rule);
+  }
+  .placeholder-lines{ display:flex; flex-direction:column; gap:10px; }
+  .placeholder-line{ height:1px; background:var(--rule); }
+  .placeholder-line.w80{ width:80%; }
+  .placeholder-line.w60{ width:60%; }
+  .placeholder-line.w90{ width:90%; }
+
+  .profile-name{
+    font-family:'JetBrains Mono', monospace;
+    font-size:clamp(24px, 3vw, 34px);
+    letter-spacing:1px;
+    margin-bottom:6px;
+  }
+  .profile-role{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    letter-spacing:2px;
+    color:var(--ivory-dim);
+    margin-bottom:10px;
+  }
+  .profile-table{ display:flex; flex-direction:column; }
+  .profile-row{
+    display:flex;
+    border-bottom:1px solid var(--rule);
+  }
+  .profile-row:last-child{ border-bottom:none; }
+  .profile-key{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--gold-b);
+    padding:12px 14px;
+    flex:0 0 180px;
+  }
+  .profile-val{
+    flex:1;
+    border-left:1px solid var(--rule);
+  }
+
+  .photo-banner{
+    display:flex;
+    align-items:flex-end;
+    gap:24px;
+    padding:26px;
+    border-bottom:1px solid var(--rule);
+  }
+  .photo-frame{
+    border:1px solid var(--gold-c);
+    padding:6px;
+    background:#0e0c0a;
+    flex:0 0 140px;
+  }
+  .photo-frame img{
+    width:140px;
+    height:170px;
+    object-fit:cover;
+    object-position:top center;
+    filter:grayscale(10%) contrast(1.05);
+    display:block;
+  }
+  .banner-info{ flex:1; padding-bottom:4px; }
+  .photo-dated{ margin-top:6px; color:var(--gold-c); }
+  .photo-caption{
+    text-align:left;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:3px;
+    color:var(--ivory-dim);
+  }
+
+  .affiliates{ padding:26px; border-top:1px solid var(--rule); }
+  .affiliates-title{
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    letter-spacing:4px;
+    margin-bottom:16px;
+  }
+  .aff-table{ width:100%; border-collapse:collapse; }
+  .aff-table th{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--gold-b);
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:1px solid var(--gold-c);
+  }
+  .aff-table td{
+    padding:14px 12px;
+    border-bottom:1px solid var(--rule);
+    height:14px;
+  }
+
+  .dossier-footer{
+    padding:20px 26px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .footer-back{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:3px;
+    color:var(--ivory-dim);
+    cursor:pointer;
+  }
+  .footer-back:hover{ color:var(--gold-b); }
+  .footer-index{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--ivory-dim);
+  }
+
+  .dossier-text{ font-size:13px; line-height:1.75; color:var(--ivory); }
+  .intel-list{ list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .intel-list li{ font-size:13px; line-height:1.65; color:var(--ivory); padding-left:16px; position:relative; }
+  .intel-list li::before{ content:"›"; position:absolute; left:0; color:var(--gold-b); }
+  .profile-val{ font-size:13px; color:var(--ivory); padding:12px 14px; letter-spacing:0.5px; }
+  .aff-table td{ font-size:12px; color:var(--ivory); vertical-align:top; line-height:1.5; }
+
+  @media (max-width:900px){
+    .dossier-top{ grid-template-columns:1fr; }
+    .col{ border-right:none; border-bottom:1px solid var(--rule); }
+  }
+
+  /* ===== STANDING FIXES ===== */
+  *{ -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+  #rotate-lock{ position:fixed; inset:0; z-index:1000; background:#0a0a0a; display:none; flex-direction:column; align-items:center; justify-content:center; gap:22px; }
+  #rotate-lock .rl-text{ font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:3px; color:#C9A24A; text-transform:uppercase; text-align:center; padding:0 24px; }
+  #rotate-lock svg{ animation:rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock{ 0%,100%{ transform:rotate(0deg); } 40%,60%{ transform:rotate(-90deg); } }
+  .wa-return{ position:fixed; right:18px; bottom:14px; z-index:60; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1.5px; color:#8c8272; text-decoration:none; outline:none; background:rgba(0,0,0,0.8); padding:6px 10px; }
+  .wa-return:hover{ color:#C9A24A; }
+  @media (orientation:portrait){ #rotate-lock{ display:flex; } .wa-return{ display:none; } }
+</style>
+</head>
+<body style="background:#0b0908;">
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+<div class="scanlines"></div>
+<a class="wa-return" href="https://wapublishing.co.uk" target="_top">← Return to WA Publishing</a>
+<div class="decrypt-overlay" id="decrypt-overlay">
+  <div class="decrypt-console">
+    <div class="decrypt-log" id="decrypt-log"></div>
+    <div class="decrypt-percent mono" id="decrypt-percent">0%</div>
+    <div class="decrypt-bar"><div class="decrypt-bar-fill" id="decrypt-fill"></div></div>
+  </div>
+</div>
+
+
+  <!-- SCREEN 1: LAPTOP -->
+  <section id="screen-laptop" class="screen active">
+    <div class="laptop-wrap" onclick="showScreen('groups')">
+      <img src="image-01.jpg" alt="E.I.D. terminal" style="width:100%; display:block; border-radius:4px;">
+    </div>
+    <div class="laptop-hint">CLICK TO ACCESS TERMINAL</div>
+  </section>
+
+  <!-- SCREEN 2: GROUP DIRECTORY -->
+  <section id="screen-groups" class="screen">
+    <div class="directory-panel" style="padding:0;">
+      <div class="term-bar">
+        <div class="term-dot"></div><div class="term-dot"></div><div class="term-dot live"></div>
+        <div class="term-bar-label mono">eid-terminal://directory</div>
+        <div class="term-bar-status mono">● CONNECTED</div>
+      </div>
+      <div style="padding:40px;">
+      <div class="directory-title gold-text">E.I.D. SUBJECT DIRECTORY</div>
+      <div class="directory-sub mono">3 GROUPS FOUND<span class="cursor-blink">_</span></div>
+      <div class="directory-list">
+        <div class="directory-row" onclick="showGroup('whitfield')">
+          <span class="directory-code mono">GROUP 01</span>
+          <span class="directory-name">WHITFIELD FAMILY</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showGroup('romanov')">
+          <span class="directory-code mono">GROUP 02</span>
+          <span class="directory-name">ROMANOV FAMILY</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showGroup('walker')">
+          <span class="directory-code mono">GROUP 03</span>
+          <span class="directory-name">WALKER FAMILY</span>
+          <span class="directory-arrow">›</span>
+        </div>
+      </div>
+      <div class="back-hint" onclick="showScreen('laptop')">‹ DISCONNECT TERMINAL</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: FAMILY MEMBER DIRECTORY -->
+  <section id="screen-directory" class="screen">
+    <div class="directory-panel" style="padding:0;">
+      <div class="term-bar">
+        <div class="term-dot"></div><div class="term-dot"></div><div class="term-dot live"></div>
+        <div class="term-bar-label mono" id="group-termpath">eid-terminal://directory/whitfield</div>
+        <div class="term-bar-status mono">● CONNECTED</div>
+      </div>
+      <div style="padding:40px;">
+      <div class="directory-title gold-text" id="group-title">WHITFIELD FAMILY</div>
+      <div class="directory-sub mono" id="group-count">5 RECORDS FOUND<span class="cursor-blink">_</span></div>
+
+      <div class="directory-list" id="group-whitfield">
+        <div class="directory-row" onclick="showDossier('wayne')">
+          <span class="directory-code mono">EID-WW001TLE</span>
+          <span class="directory-name">WAYNE WHITFIELD</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('david')">
+          <span class="directory-code mono">EID-DW002TLE</span>
+          <span class="directory-name">DAVID WHITFIELD</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('elizabeth')">
+          <span class="directory-code mono">EID-EW003TLE</span>
+          <span class="directory-name">ELIZABETH WHITFIELD</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('shannon')">
+          <span class="directory-code mono">EID-SW004TLM</span>
+          <span class="directory-name">SHANNON WHITFIELD</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('lazarus')">
+          <span class="directory-code mono">EID-LW005TLM</span>
+          <span class="directory-name">LAZARUS WHITFIELD</span>
+          <span class="directory-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="directory-list" id="group-romanov" style="display:none;">
+        <div class="directory-row" onclick="showDossier('andrew')">
+          <span class="directory-code mono">EID-AR006TLH</span>
+          <span class="directory-name">ANDREW ROMANOV</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('olesia')">
+          <span class="directory-code mono">EID-OR007TLM</span>
+          <span class="directory-name">OLESIA ROMANOV</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('petr')">
+          <span class="directory-code mono">EID-PR008TLH</span>
+          <span class="directory-name">PETR ROMANOV</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('tatiana')">
+          <span class="directory-code mono">EID-TR009TLE</span>
+          <span class="directory-name">TATIANA ROMANOV</span>
+          <span class="directory-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="directory-list" id="group-walker" style="display:none;">
+        <div class="directory-row" onclick="showDossier('luke')">
+          <span class="directory-code mono">EID-LW010TLH</span>
+          <span class="directory-name">LUKE WALKER</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('vivian')">
+          <span class="directory-code mono">EID-VW011TLN</span>
+          <span class="directory-name">VIVIAN WALKER</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('stephen')">
+          <span class="directory-code mono">EID-SW012TLN</span>
+          <span class="directory-name">STEPHEN WALKER</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('rebecca')">
+          <span class="directory-code mono">EID-RW013TLN</span>
+          <span class="directory-name">REBECCA WALKER</span>
+          <span class="directory-arrow">›</span>
+        </div>
+        <div class="directory-row" onclick="showDossier('lily')">
+          <span class="directory-code mono">EID-LW014TLM</span>
+          <span class="directory-name">LILY WALKER</span>
+          <span class="directory-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="back-hint" onclick="showScreen('groups')">‹ RETURN TO GROUP DIRECTORY</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: CLASSIFIED / ACCESS DENIED -->
+  <section id="screen-classified" class="screen">
+    <div class="denied-box mono">
+      <div class="denied-title">ACCESS DENIED</div>
+      <div class="denied-sub">CLASSIFIED — PENDING REVIEW</div>
+      <div class="denied-code" id="denied-code">EID-XX000TLX</div>
+      <div class="denied-code" id="denied-name">SUBJECT NAME</div>
+      <div class="denied-unlock" id="denied-unlock">This record will be declassified upon release of<br><strong>—</strong></div>
+      <div class="denied-back" onclick="showScreen('directory')">‹ RETURN TO DIRECTORY</div>
+    </div>
+  </section>
+  <section id="screen-dossier" class="screen">
+    <div class="dossier-wrap">
+      <div class="term-bar">
+        <div class="term-dot"></div><div class="term-dot"></div><div class="term-dot live"></div>
+        <div class="term-bar-label mono" id="d-termpath">eid-terminal://record/EID-XX000TLX</div>
+        <div class="term-bar-status mono">● RECORD ACTIVE</div>
+      </div>
+      <div class="photo-banner">
+        <div class="photo-frame">
+          <img id="d-photo" src="" alt="Subject photograph">
+        </div>
+        <div class="banner-info">
+          <div class="profile-name" id="d-name">NAME</div>
+          <div class="profile-role" id="d-role">ROLE / TITLE</div>
+          <div class="photo-caption">SUBJECT PHOTOGRAPH</div>
+          <div class="photo-caption photo-dated" id="d-photodate"></div>
+        </div>
+      </div>
+
+      <div class="dossier-top">
+        <!-- ASSESSMENT COLUMN -->
+        <div class="col">
+          <div class="section-label-row">
+            <div class="section-label gold-text">ASSESSMENT</div>
+            <div class="tl-inline">
+              <span class="tl-inline-label">THREAT LEVEL</span>
+              <span class="tl-inline-word mono" id="d-tlword">—</span>
+            </div>
+          </div>
+          <div class="subsection">CHARACTER PROFILE</div>
+          <div id="d-profile"></div>
+          <div class="placeholder-lines" id="d-profile-ph">
+            <div class="placeholder-line w90"></div>
+            <div class="placeholder-line w80"></div>
+            <div class="placeholder-line w90"></div>
+            <div class="placeholder-line w60"></div>
+          </div>
+          <div class="subsection">KEY INTELLIGENCE NOTES</div>
+          <div id="d-intel"></div>
+          <div class="placeholder-lines" id="d-intel-ph">
+            <div class="placeholder-line w80"></div>
+            <div class="placeholder-line w90"></div>
+            <div class="placeholder-line w60"></div>
+            <div class="placeholder-line w80"></div>
+            <div class="placeholder-line w90"></div>
+          </div>
+        </div>
+
+        <!-- STATISTICS COLUMN -->
+        <div class="col">
+          <div class="section-label gold-text">STATISTICS</div>
+          <div class="profile-table">
+            <div class="profile-row"><div class="profile-key">HEIGHT</div><div class="profile-val" data-stat="height"></div></div>
+            <div class="profile-row"><div class="profile-key">WEIGHT</div><div class="profile-val" data-stat="weight"></div></div>
+            <div class="profile-row"><div class="profile-key">HAIR COLOUR</div><div class="profile-val" data-stat="hair"></div></div>
+            <div class="profile-row"><div class="profile-key">EYE COLOUR</div><div class="profile-val" data-stat="eyes"></div></div>
+            <div class="profile-row"><div class="profile-key">NATIONALITY</div><div class="profile-val" data-stat="nationality"></div></div>
+            <div class="profile-row"><div class="profile-key">BIRTHPLACE</div><div class="profile-val" data-stat="birthplace"></div></div>
+            <div class="profile-row"><div class="profile-key">CURRENT LOCATION</div><div class="profile-val" data-stat="location"></div></div>
+            <div class="profile-row"><div class="profile-key">OCCUPATION / ROLE</div><div class="profile-val" data-stat="occupation"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFFILIATES -->
+      <div class="affiliates">
+        <div class="affiliates-title gold-text">AFFILIATES</div>
+        <table class="aff-table">
+          <thead>
+            <tr><th>NAME</th><th>AFFILIATION</th><th>RELATIONSHIP</th><th>NOTES</th></tr>
+          </thead>
+          <tbody id="d-aff">
+            <tr><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dossier-footer">
+        <div class="footer-back" onclick="showScreen('directory')">‹ RETURN TO DIRECTORY</div>
+        <div class="footer-index" id="d-index">DOSSIER 01 / 14</div>
+      </div>
+    </div>
+  </section>
+
+<script>
+  const records = {
+    wayne:     { code:'EID-WW001TLE', tl:'TLE', tlword:'EXTREME', name:'WAYNE WHITFIELD',     idx:'01', img:'image-02.jpg',
+      role:'KING OF EURUSSIA',
+      profile:'Has ruled as King of Eurussia for several decades, overseeing a period of relative stability and consolidation of power across the continent. Shows signs of prolonged withdrawal from active leadership since the death of his wife: self-imposed isolation, increased alcohol dependency and reduced engagement with governance. Retains underlying leadership presence and authority when engaged, with a historical capacity for decisive action. Relationship strain within the Whitfield family is evident.',
+      intel:[
+        'Holds absolute political authority. Able to mobilise national assets and military forces through a single directive.',
+        'FLAME-trained (eight years, 18–26).',
+        'Maintains continental stability through relationships with Luke Walker and Andrew Romanov.',
+        'Reduced involvement has increased the autonomy of subordinate figures, notably Chancellor Lionel Brady.',
+        'Walks with a cane due to mobility issues, believed to stem from old injuries.',
+        'Travels with a dedicated driver and aide, Jules.',
+        'Re-engagement by subject may significantly alter current political and military trajectories.'
+      ],
+      stats:{ height:'1.83 m (6 ft 0 in)', weight:'12 st 13 lb', hair:'Silver-grey', eyes:'Blue', nationality:'Eurussian', birthplace:'Phoenix City', location:'Whitfield Palace, Phoenix City', occupation:'King of Eurussia' },
+      affiliates:[
+        ['David Whitfield','PMC','Son','PMC Commander'],
+        ['Elizabeth Whitfield','Southern Trench','Daughter','Trench Commander'],
+        ['Shannon Whitfield','Whitfield Family','Daughter','—'],
+        ['Lazarus Whitfield','Whitfield Family','Son','Estranged'],
+        ['Lionel Brady','Parliament','Chancellor','Chief advisor to the Crown'],
+        ['Pyro','FLAME','Ally','FLAME Commander'],
+        ['Andrew Romanov','Krashnov','Ally','Head of the Romanov family'],
+        ['Luke Walker','Greentown','Ally','Head of the Walker family']
+      ]
+    },
+    david:     { code:'EID-DW002TLE', tl:'TLE', tlword:'EXTREME', name:'DAVID WHITFIELD',     idx:'02', img:'image-03.jpg',
+      role:'PMC COMMANDER',
+      profile:'FLAME Academy graduate and Commander of the Phoenix Military Corps, the youngest general in Eurussia\'s history. Highly controlled and disciplined, with decision-making that is direct, efficient and outcome-driven, with minimal tolerance for hesitation. Emotional restraint is pronounced; personal factors rarely interfere with operational judgement. Shows strong loyalty to the Whitfield family and trusted command figures. Prefers order, control and decisive resolution over prolonged conflict.',
+      intel:[
+        'Combines frontline combat capability with high-level command, allowing both direct engagement and coordinated force deployment.',
+        'His presence on the battlefield markedly increases allied effectiveness.',
+        'Campaign record: Second Hatchet Hills Rebellion, Lewton Province Uprising, Midwest Uprising (Shaddock Province).',
+        'Only recorded individual to survive a direct one-on-one engagement with the Angel of Death. Details remain restricted.',
+        'Engagement without significant numerical or strategic advantage is strongly discouraged. Disruption of command structure is the recommended approach.'
+      ],
+      stats:{ height:'1.88 m (6 ft 2 in)', weight:'16 st 6 lb', hair:'Dark brown', eyes:'Blue', nationality:'Eurussian', birthplace:'Phoenix City', location:'PMC Headquarters, Phoenix City', occupation:'PMC Commander' },
+      affiliates:[
+        ['Wayne Whitfield','The Crown','Father','King of Eurussia'],
+        ['Elizabeth Whitfield','Southern Trench','Sister','Trench Commander'],
+        ['Shannon Whitfield','Whitfield Family','Sister','—'],
+        ['Councillor Varrin','Parliament','Ally','—'],
+        ['Pyro','FLAME','Ally','FLAME Commander'],
+        ['Flint','FLAME','Ally','FLAME Assistant Commander']
+      ]
+    },
+    elizabeth: { code:'EID-EW003TLE', tl:'TLE', tlword:'EXTREME', name:'ELIZABETH WHITFIELD', idx:'03', img:'image-04.jpg',
+      role:'SOUTHERN TRENCH COMMANDER',
+      profile:'Commander of the full Southern Trench, operating from Central Command. Presents as composed, guarded and unyielding, but the discipline is a choice rather than an absence of feeling. She takes every loss along the line personally and carries the weight of the trench as though it belongs to her alone, rarely allowing anyone, family included, to see what it costs her. Stubborn and uncompromising, she sets exacting standards and earns the loyalty of capable personnel by holding herself to them first. Her marriage is known to be unhappy; she has spent the last twelve years at the trench.',
+      intel:[
+        'Holds command of the entire trench line, coordinating directly with the four other major hubs: Western (Mario), Eastern (Mary), Atlantic (Sammy) and Pacific (Thomaz).',
+        'Exerts control through structured military execution. Under her command, unit cohesion and discipline increase significantly.',
+        'Has held the Southern Trench for twelve years, maintaining defensive integrity despite resource strain, personnel shortages and sustained external pressure.',
+        'Under sustained pressure from Chancellor Lionel Brady, the Council and Parliament, as well as the southern threat itself.',
+        'Trench personnel are loyal to her personally, not only to her rank. Removal would destabilise trench operations.'
+      ],
+      stats:{ height:'1.83 m (6 ft)', weight:'11 st 7 lb', hair:'Blonde', eyes:'Blue', nationality:'Eurussian', birthplace:'Phoenix City', location:'Southern Trench, Central Command Centre', occupation:'Southern Trench Commander' },
+      affiliates:[
+        ['Wayne Whitfield','The Crown','Father','King of Eurussia'],
+        ['David Whitfield','PMC','Brother','PMC Commander'],
+        ['Shannon Whitfield','Whitfield Family','Sister','—'],
+        ['Lionel Brady','Parliament','Husband (estranged)','Chancellor'],
+        ['Pyro','FLAME','Ally','FLAME Commander'],
+        ['Yara','Southern Trench','Subordinate','Second-in-command'],
+        ['Quinn','Southern Trench','Subordinate','Central Trench Hub Supervisor']
+      ]
+    },
+    shannon:   { code:'EID-SW004TLM', tl:'TLM', tlword:'MINIMAL', name:'SHANNON WHITFIELD',   idx:'04', img:'image-05.jpg',
+      role:'WHITFIELD FAMILY MEMBER',
+      profile:'Composed and perceptive. Following the death of her mother, she assumed the role her mother once held within the Whitfield family: peacekeeper between its members and, increasingly, carer for her father during his current decline. Consistently acts to reduce conflict between key family members, favouring restraint and controlled action. Fiercely protective of her children, Leo and Marin, with decision-making centred on preserving family stability. More guarded with her father than with her siblings. Behavioural patterns align more closely with her mother than with Wayne Whitfield.',
+      intel:[
+        'Holds no formal authority. Significance derives from proximity to high-value individuals.',
+        'Maintains consistent influence over internal Whitfield family dynamics, particularly during periods of tension.',
+        'Above-average observational awareness and strong pattern recognition in interpersonal dynamics.',
+        'Oversees major state functions at Whitfield Palace.',
+        'Husband disappeared not long after the birth of their children. Whereabouts unknown.',
+        'No formal military or operational service on record.'
+      ],
+      stats:{ height:'1.65 m (5 ft 5 in)', weight:'8 st 13 lb', hair:'Brown', eyes:'Blue', nationality:'Eurussian', birthplace:'Phoenix City', location:'Whitfield Palace, Phoenix City', occupation:'Whitfield Family Member' },
+      affiliates:[
+        ['Wayne Whitfield','The Crown','Father','King of Eurussia'],
+        ['David Whitfield','PMC','Brother','PMC Commander'],
+        ['Elizabeth Whitfield','Southern Trench','Sister','Southern Trench Commander'],
+        ['Lazarus Whitfield','Whitfield Family','Brother','—'],
+        ['Pyro','FLAME','Ally','FLAME Commander'],
+        ['Luke Walker','Greentown','Ally','Head of the Walker family'],
+        ['Leo Whitfield','Whitfield Family','Son','—'],
+        ['Marin Whitfield','Whitfield Family','Daughter','—']
+      ]
+    },
+    lazarus:   { code:'EID-LW005TLM', tl:'TLM', tlword:'MINIMAL', name:'LAZARUS WHITFIELD',   idx:'05', img:'image-06.jpg',
+      role:'WHITFIELD FAMILY MEMBER',
+      profile:'Youngest of the Whitfield siblings. Carries a pronounced air of entitlement, with behaviour consistent with prolonged reliance on inherited status and wealth. Lacks discipline, direction and personal accountability. Avoids responsibility and structured environments. Openly hostile towards most of those around him and estranged from most of his family, with the exception of his sister Shannon. Commands no respect beyond his name; assessment indicates he is tolerated in senior circles solely because of it.',
+      intel:[
+        'The only Whitfield male never to complete FLAME training. Attended FLAME Academy for six months before leaving.',
+        'No verified operational deployment or combat experience.',
+        'Regularly located within Phoenix Central social districts. No structured employment or formal role on record.',
+        'Openly hostile towards Chancellor Lionel Brady and his brother David, among others.',
+        'Not considered a direct threat. Monitoring recommended due to familial connection to high-value individuals.'
+      ],
+      stats:{ height:'1.83 m (6 ft)', weight:'12 st 2 lb', hair:'Brown', eyes:'Blue', nationality:'Eurussian', birthplace:'Phoenix City', location:'Phoenix Central District', occupation:'None on record' },
+      affiliates:[
+        ['Shannon Whitfield','Whitfield Family','Sister','Only close family tie'],
+        ['Wayne Whitfield','The Crown','Father','Estranged'],
+        ['David Whitfield','PMC','Brother','Estranged, hostile'],
+        ['Elizabeth Whitfield','Southern Trench','Sister','Estranged'],
+        ['Lionel Brady','Parliament','Brother-in-law','Hostile']
+      ]
+    },
+    andrew:    { code:'EID-AR006TLH', tl:'TLH', tlword:'HIGH',    name:'ANDREW ROMANOV',      idx:'06', img:'image-07.jpg',
+      role:'HEAD OF THE ROMANOV FAMILY',
+      profile:'Head of the Romanov family and ruler of Krashnov, son of Yuri Romanov. A reformer who has spent his reign easing the legacy of his forebears. Krashnov remains a surveillance state and still relies on labour control. Conditions for its population are far from where they need to be, but the improvement under his rule is significant. Composed, measured and diplomatic, he upholds the peace with Phoenix established under Yuri and holds long-standing personal ties to Wayne Whitfield and Luke Walker. The family had expected his daughter Tatiana to inherit and continue his work; she chose a different path.',
+      intel:[
+        'Holds authority over Eurussia\'s industrial and production backbone, providing significant economic leverage.',
+        'Firm ally of the Whitfield Crown, maintaining the peace between Krashnov and Phoenix.',
+        'Holds authority to activate and deploy the K-Militia when required. Day-to-day maintenance of the force is delegated to his brother, Petr Romanov.',
+        'Close personal relationship with Luke Walker. The three founding families are currently aligned.',
+        'Rarely leaves Krashnov in person.'
+      ],
+      stats:{ height:'1.85 m (6 ft 1 in)', weight:'13 st 7 lb', hair:'Black', eyes:'Green', nationality:'Eurussian', birthplace:'Krashnov', location:'Romanov Estate, Krashnov', occupation:'Head of the Romanov family, ruler of Krashnov' },
+      affiliates:[
+        ['Olesia Romanov','Romanov Family','Wife','—'],
+        ['Tatiana Romanov','Romanov Family','Daughter','—'],
+        ['Petr Romanov','Romanov Family','Brother','—'],
+        ['Wayne Whitfield','The Crown','Ally','King of Eurussia'],
+        ['Luke Walker','Greentown','Ally','Head of the Walker family']
+      ]
+    },
+    olesia:    { code:'EID-OR007TLM', tl:'TLM', tlword:'MINIMAL', name:'OLESIA ROMANOV',      idx:'07', img:'image-08.jpg',
+      role:'WIFE OF ANDREW ROMANOV',
+      profile:'Publicly regarded as the wife of Andrew Romanov and little more: elegant, composed and gracious, with refined diplomatic manners. That perception is inaccurate; she stands at Andrew\'s side as a partner in power rather than a consort. Sharply observant, she reads people rather than posture and attends to what goes unsaid, moving seamlessly from private life to matters of power when required. Devoted to her family, with quiet concern for her daughter Tatiana, who rejected the path expected of her.',
+      intel:[
+        'Handles Krashnov\'s dealings with visiting delegates and dignitaries.',
+        'Holds Andrew\'s full confidence. Her influence within Krashnov significantly exceeds her title.',
+        'Accompanies Andrew on official engagements outside Krashnov.',
+        'Current threat rating reflects public role only. Reassessment recommended.'
+      ],
+      stats:{ height:'1.68 m (5 ft 6 in)', weight:'8 st 4 lb', hair:'Blonde', eyes:'Brown', nationality:'Eurussian', birthplace:'Krashnov', location:'Romanov Estate, Krashnov', occupation:'Wife of the head of the Romanov family' },
+      affiliates:[
+        ['Andrew Romanov','Romanov Family','Husband','Head of the Romanov family'],
+        ['Tatiana Romanov','Romanov Family','Daughter','—'],
+        ['Petr Romanov','Romanov Family','Brother-in-law','—']
+      ]
+    },
+    petr:      { code:'EID-PR008TLH', tl:'TLH', tlword:'HIGH',    name:'PETR ROMANOV',        idx:'08', img:'image-09.jpg', classified:true, unlockBook:'FOREIGN LANDS' },
+    tatiana:   { code:'EID-TR009TLE', tl:'TLE', tlword:'EXTREME', name:'TATIANA ROMANOV',     idx:'09', img:'image-10.jpg', classified:true, unlockBook:'FOREIGN LANDS' },
+    luke:      { code:'EID-LW010TLH', tl:'TLH', tlword:'HIGH',    name:'LUKE WALKER',         idx:'10', img:'image-11.jpg',
+      role:'HEAD OF THE WALKER FAMILY',
+      profile:'Head of the Walker family and steward of Greentown. Inherited a Greentown already restored to the founding values of Thomas Walker and governs it in that spirit. Steady, measured and family-centred; close to his wife Vivian and their three children. A doting grandfather to Cal. Holds long-standing friendships with Wayne Whitfield and Andrew Romanov. Cautious of Phoenix and its politics. Prefers to keep his family close to home.',
+      intel:[
+        'Controls Greentown, Eurussia\'s agricultural backbone and the continent\'s main food supply.',
+        'During his rule, trade talks with the Old UK collapsed after he refused to lower the price of Greentown\'s food exports and limited grain sales.',
+        'The Old UK retaliated with strikes on Greenport, beginning the Greentown Riots.',
+        'After the riots, led the rebuilding of northern Greentown, large parts of which lay in ruins.',
+        'Established the Green Guard and Ember West to give Greentown its own defence. Appointed Natalie Spykes to lead Ember West.',
+        'Brokered the link between Ember West and FLAME Academy.',
+        'His relationships with Wayne Whitfield and Andrew Romanov are central to the alignment of the three founding families.'
+      ],
+      stats:{ height:'1.85 m (6 ft 1 in)', weight:'14 st', hair:'Red', eyes:'Blue', nationality:'Eurussian', birthplace:'Greentown', location:'Walker Estate, Greentown', occupation:'Head of the Walker family, steward of Greentown' },
+      affiliates:[
+        ['Vivian Walker','Walker Family','Wife','—'],
+        ['Rebecca Walker','Ministry of Agriculture','Daughter','Head of the Ministry of Agriculture'],
+        ['Stephen Walker','Ember West','Son','Cadet'],
+        ['Lily Walker','Walker Family','Daughter','—'],
+        ['Cal Walker','Walker Family','Grandson','—'],
+        ['Wayne Whitfield','The Crown','Ally','King of Eurussia'],
+        ['Andrew Romanov','Krashnov','Ally','Head of the Romanov family']
+      ]
+    },
+    vivian:    { code:'EID-VW011TLN', tl:'TLN', tlword:'NORMAL',  name:'VIVIAN WALKER',       idx:'11', img:'image-12.jpg',
+      role:'WIFE OF LUKE WALKER',
+      profile:'Wife of Luke Walker and mother of Rebecca, Lily and Stephen. A homebody at heart, centred on her family and the Walker Estate. Reserved and largely uninvolved in political affairs, which she leaves to Luke. When asked, she is not shy about giving her opinion. Her concerns tend to focus on what a decision means for her family. Warm and good-humoured in company, perceptive and protective of her children.',
+      intel:[
+        'No significant intelligence on record. Held on file due to her position as wife of Luke Walker.'
+      ],
+      stats:{ height:'1.65 m (5 ft 5 in)', weight:'9 st 2 lb', hair:'Dark brown', eyes:'Brown', nationality:'Eurussian', birthplace:'Greentown', location:'Walker Estate, Greentown', occupation:'Wife of Luke Walker' },
+      affiliates:[
+        ['Luke Walker','Walker Family','Husband','Head of the Walker family'],
+        ['Rebecca Walker','Ministry of Agriculture','Daughter','Head of the Ministry of Agriculture'],
+        ['Stephen Walker','Ember West','Son','Cadet'],
+        ['Lily Walker','Walker Family','Daughter','—'],
+        ['Cal Walker','Walker Family','Grandson','—']
+      ]
+    },
+    stephen:   { code:'EID-SW012TLN', tl:'TLN', tlword:'NORMAL',  name:'STEPHEN WALKER',      idx:'12', img:'image-13.jpg',
+      role:'EMBER WEST CADET',
+      profile:'Only son of Luke and Vivian Walker and a cadet at Ember West. Grew up on his father\'s stories of David Whitfield and has built his ambitions around becoming the soldier David is. Shows grit, determination and the right attitude, with a strong sense of duty and a belief that doing what is right is worth the personal cost. Already displaying clear leadership qualities beyond his current rank. Wants to transfer to FLAME Academy; his parents want him kept close to home.',
+      intel:[
+        'Assessed as showing exceptional potential. A strong candidate for future command within the Green Guard.',
+        'Displays clear leadership qualities despite his cadet status.',
+        'Considered a credible future successor to Luke Walker as head of Greentown.'
+      ],
+      stats:{ height:'1.91 m (6 ft 3 in)', weight:'16 st', hair:'Red', eyes:'Green', nationality:'Eurussian', birthplace:'Greentown', location:'Ember West, Greentown', occupation:'Ember West cadet' },
+      affiliates:[
+        ['Luke Walker','Walker Family','Father','Head of the Walker family'],
+        ['Vivian Walker','Walker Family','Mother','—'],
+        ['Rebecca Walker','Ministry of Agriculture','Sister','Head of the Ministry of Agriculture'],
+        ['Lily Walker','Walker Family','Sister','—'],
+        ['Cal Walker','Walker Family','Nephew','—'],
+        ['Natalie Spykes','Ember West','Academy head','—']
+      ]
+    },
+    rebecca:   { code:'EID-RW013TLN', tl:'TLN', tlword:'NORMAL',  name:'REBECCA WALKER',      idx:'13', img:'image-14.jpg',
+      role:'HEAD OF THE MINISTRY OF AGRICULTURE',
+      profile:'Daughter of Luke and Vivian Walker and Head of Greentown\'s Ministry of Agriculture. Analytical, composed and direct, she commands a room of ministers with clear judgement and refuses to inflate problems or escalate them unnecessarily. Career-driven and focused on securing the province, she puts her work ahead of everything else, family included. In this she is the opposite of her parents, who balance their responsibilities with a strong family focus. Sharp-witted with her siblings.',
+      intel:[
+        'Manages Greentown\'s agriculture and food supply, the backbone of the continent\'s food chain.',
+        'Works closely with Green Guard analysts and Ember West on threats to the food supply.',
+        'Favours targeted responses over force.'
+      ],
+      stats:{ height:'1.70 m (5 ft 7 in)', weight:'8 st 10 lb', hair:'Dark brown', eyes:'Green', nationality:'Eurussian', birthplace:'Greentown', location:'Ministry of Agriculture, Greentown', occupation:'Head of the Ministry of Agriculture' },
+      affiliates:[
+        ['Luke Walker','Walker Family','Father','Head of the Walker family'],
+        ['Vivian Walker','Walker Family','Mother','—'],
+        ['Stephen Walker','Ember West','Brother','Cadet'],
+        ['Lily Walker','Walker Family','Sister','—'],
+        ['Cal Walker','Walker Family','Nephew','—']
+      ]
+    },
+    lily:      { code:'EID-LW014TLM', tl:'TLM', tlword:'MINIMAL', name:'LILY WALKER',         idx:'14', img:'image-15.jpg',
+      role:'WALKER FAMILY MEMBER',
+      profile:'Daughter of Luke and Vivian Walker and mother to her young son, Cal. Independent and content to go her own way, she keeps out of Walker family business and politics. Her focus is entirely on raising Cal. She is a calm, attentive and protective mother. Warm and quietly self-assured.',
+      intel:[
+        'No formal role or political involvement on record.',
+        'Single mother. Cal\'s father is not on record.',
+        'Held on file due to her position within the Walker family.'
+      ],
+      stats:{ height:'1.68 m (5 ft 6 in)', weight:'8 st 7 lb', hair:'Black', eyes:'Brown', nationality:'Eurussian', birthplace:'Greentown', location:'Walker Estate, Greentown', occupation:'None on record' },
+      affiliates:[
+        ['Cal Walker','Walker Family','Son','—'],
+        ['Luke Walker','Walker Family','Father','Head of the Walker family'],
+        ['Vivian Walker','Walker Family','Mother','—'],
+        ['Rebecca Walker','Ministry of Agriculture','Sister','Head of the Ministry of Agriculture'],
+        ['Stephen Walker','Ember West','Brother','Cadet']
+      ]
+    },
+  };
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  const groups = {
+    whitfield: { title:'WHITFIELD FAMILY', count:'5', path:'eid-terminal://directory/whitfield' },
+    romanov:   { title:'ROMANOV FAMILY',   count:'4', path:'eid-terminal://directory/romanov' },
+    walker:    { title:'WALKER FAMILY',    count:'5', path:'eid-terminal://directory/walker' },
+  };
+
+  function showGroup(key){
+    document.getElementById('group-whitfield').style.display = (key === 'whitfield') ? 'flex' : 'none';
+    document.getElementById('group-romanov').style.display = (key === 'romanov') ? 'flex' : 'none';
+    document.getElementById('group-walker').style.display = (key === 'walker') ? 'flex' : 'none';
+    document.getElementById('group-title').textContent = groups[key].title;
+    document.getElementById('group-count').innerHTML = groups[key].count + ' RECORDS FOUND<span class="cursor-blink">_</span>';
+    document.getElementById('group-termpath').textContent = groups[key].path;
+    showScreen('directory');
+  }
+
+  const photoDated = {"wayne": "CURRENT", "david": "1 YR PRIOR", "elizabeth": "CURRENT", "shannon": "CURRENT", "lazarus": "CURRENT", "andrew": "11 YRS PRIOR", "olesia": "7 YRS PRIOR", "petr": "10 YRS PRIOR", "tatiana": "CURRENT", "luke": "10 YRS PRIOR", "vivian": "8 YRS PRIOR", "stephen": "CURRENT", "rebecca": "CURRENT", "lily": "CURRENT"};
+  function showDossier(key){
+    const r = records[key];
+    const overlay = document.getElementById('decrypt-overlay');
+    const log = document.getElementById('decrypt-log');
+    const percentEl = document.getElementById('decrypt-percent');
+    const fill = document.getElementById('decrypt-fill');
+
+    const steps = [
+      { t: 0,    text: 'INITIALISING SECURE CHANNEL...' },
+      { t: 900,  text: 'AUTHENTICATING CLEARANCE...' },
+      { t: 2000, text: 'LOCATING RECORD ' + r.code + '...' },
+      { t: 3200, text: 'DECRYPTING SUBJECT FILE...' },
+      r.classified
+        ? { t: 4400, text: 'CLASSIFICATION LOCK DETECTED', ok:false, denied:true }
+        : { t: 4400, text: 'ACCESS GRANTED', ok:true },
+    ];
+
+    log.innerHTML = steps.map(s =>
+      `<div class="decrypt-line" data-t="${s.t}"><span>${s.text}</span>${s.ok ? '<span class="ok">✓</span>' : ''}${s.denied ? '<span class="denied-x">✕</span>' : ''}</div>`
+    ).join('');
+
+    overlay.classList.add('active');
+    fill.style.width = '0%';
+    percentEl.textContent = '0%';
+
+    const duration = 5000;
+    const startTime = performance.now();
+
+    steps.forEach(s => {
+      setTimeout(() => {
+        const line = log.querySelector(`[data-t="${s.t}"]`);
+        if(line) line.classList.add('show');
+      }, s.t);
+    });
+
+    function tick(now){
+      const elapsed = now - startTime;
+      const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+      fill.style.width = pct + '%';
+      percentEl.textContent = pct + '%';
+      if(elapsed < duration){
+        requestAnimationFrame(tick);
+      } else {
+        if(r.classified){
+          document.getElementById('denied-code').textContent = r.code;
+          document.getElementById('denied-name').textContent = r.name;
+          document.getElementById('denied-unlock').innerHTML = 'This record will be declassified upon release of<br><strong>' + r.unlockBook + '</strong>';
+          showScreen('classified');
+          overlay.classList.remove('active');
+          return;
+        }
+        document.getElementById('d-tlword').textContent = r.tlword;
+        const tlEl = document.getElementById('d-tlword');
+        tlEl.classList.remove('tl-safe', 'tl-danger');
+        tlEl.classList.add((r.tl === 'TLE' || r.tl === 'TLH') ? 'tl-danger' : 'tl-safe');
+        document.getElementById('d-name').textContent = r.name;
+        document.getElementById('d-role').textContent = r.role || '—';
+        const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        const prof = document.getElementById('d-profile'), profPh = document.getElementById('d-profile-ph');
+        prof.innerHTML = r.profile ? '<p class="dossier-text">' + esc(r.profile) + '</p>' : '';
+        profPh.style.display = r.profile ? 'none' : '';
+        const intel = document.getElementById('d-intel'), intelPh = document.getElementById('d-intel-ph');
+        intel.innerHTML = (r.intel && r.intel.length) ? '<ul class="intel-list">' + r.intel.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>' : '';
+        intelPh.style.display = (r.intel && r.intel.length) ? 'none' : '';
+        document.querySelectorAll('[data-stat]').forEach(el => { el.textContent = (r.stats && r.stats[el.dataset.stat]) || ''; });
+        const aff = r.affiliates || [];
+        const rows = aff.length ? aff.length : 5;
+        let affHtml = '';
+        for(let i = 0; i < rows; i++){ const a = aff[i] || ['','','','']; affHtml += '<tr>' + a.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>'; }
+        document.getElementById('d-aff').innerHTML = affHtml;
+        document.getElementById('d-photo').src = r.img;
+        document.getElementById('d-photodate').textContent = photoDated[key] ? 'IMAGE DATED: ' + photoDated[key] : '';
+        document.getElementById('d-index').textContent = 'DOSSIER ' + r.idx + ' / 14';
+        document.getElementById('d-termpath').textContent = 'eid-terminal://record/' + r.code;
+        showScreen('dossier');
+        overlay.classList.remove('active');
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+</script>
+
+</body>
+</html>
