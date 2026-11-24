@@ -792,8 +792,7 @@
     function panner(v){ if(!ctx.createStereoPanner) return null; const p=ctx.createStereoPanner(); p.pan.value=v; return p; }
     function loadClips(){
       Object.entries(VOICE_CLIPS).forEach(([k,url])=>{
-        const bin=atob(url.split(',')[1]), buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
-        ctx.decodeAudioData(buf.buffer).then(d=>{ clips[k]=d; }).catch(()=>{});
+        fetch(url).then(r=>r.arrayBuffer()).then(b=>ctx.decodeAudioData(b)).then(d=>{ clips[k]=d; }).catch(()=>{});
       });
     }
     function play(clip, gain, pan, when){
