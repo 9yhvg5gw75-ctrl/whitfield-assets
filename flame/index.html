@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLAME Academy - Tour</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: #000; font-family: 'JetBrains Mono', monospace; overflow: hidden; height: 100%; }
+
+  .stage { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
+
+  .scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity 0.9s ease; }
+  .scene.active { opacity: 1; visibility: visible; }
+
+  .scene img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+    filter: brightness(0.95) contrast(1.05);
+  }
+
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hotspot-sign {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(9px, 1.4vw, 13px);
+    letter-spacing: 2px;
+    color: #e6dcc3;
+    background: rgba(10, 8, 4, 0.55);
+    border: 1px solid rgba(230, 220, 195, 0.35);
+    padding: 6px 10px;
+    text-align: center;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .hotspot.faction .hotspot-sign {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+  }
+
+  .prompt-tag {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(230, 220, 195, 0.6);
+    pointer-events: none;
+    text-align: center;
+    width: max-content;
+    max-width: 80vw;
+  }
+
+  .return-control {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(230, 220, 195, 0.6);
+    border: 1px solid rgba(230, 220, 195, 0.25);
+    padding: 8px 16px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.3);
+  }
+  .return-control:hover { color: #e6dcc3; border-color: rgba(230, 220, 195, 0.5); }
+
+  .fade-overlay {
+    position: fixed; inset: 0; background: #000; opacity: 0;
+    pointer-events: none; transition: opacity 0.55s ease; z-index: 50;
+  }
+  .fade-overlay.active { opacity: 1; }
+
+  * { -webkit-touch-callout: none; }
+  /* keep FLAME's own buttons clear of the Return to WA Publishing link in the bottom-right corner */
+  .scene .tm-info-tag, .scene .tm-next-tag, .scene .ew-back-tag { bottom: calc(6% + 34px); }
+  .hall-prompt { bottom: auto; top: 6%; }
+  #rotate-lock { position: fixed; inset: 0; z-index: 1000; background: #0a0a0a; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  #rotate-lock .rl-text { font-size: 13px; letter-spacing: 3px; color: #C9A24A; text-transform: uppercase; text-align: center; padding: 0 24px; }
+  #rotate-lock svg { animation: rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock { 0%,100% { transform: rotate(0deg); } 40%,60% { transform: rotate(-90deg); } }
+  .wa-return { position: fixed; right: 18px; bottom: 14px; z-index: 998; font-size: 11px; letter-spacing: 1.5px; color: rgba(230, 220, 195, 0.6); text-decoration: none; background: rgba(0, 0, 0, 0.8); padding: 6px 10px; }
+  .wa-return:hover { color: #e6dcc3; }
+  @media (orientation: portrait) { #rotate-lock { display: flex; } .wa-return { display: none; } }
+
+  .end-note {
+    position: absolute;
+    top: 5%;
+    right: 5%;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(230, 220, 195, 0.4);
+    max-width: 220px;
+    text-align: right;
+    line-height: 1.6;
+    pointer-events: none;
+  }
+
+  #scene-faction { background: #000; }
+
+  .faction-heading {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #e6dcc3;
+    text-align: center;
+  }
+
+  /* ===== Veterans dossier scene (locked FLAME unit dossier template) ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap');
+
+  #scene-veterans { background:#000; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #scene-veterans .dossier-backdrop{ position:fixed; inset:0; background:#000; z-index:-1; }
+  #scene-veterans .dossier-wrap{ max-width:780px; margin:0 auto; padding:32px 24px 100px; color:#fff; }
+  #scene-veterans .dossier-title-row{
+    display:flex; align-items:center; justify-content:center; gap:16px; padding-top:28px;
+  }
+  #scene-veterans .dossier-title-row img{ height:60px; width:auto; object-fit:contain; }
+  #scene-veterans h1.dossier-h1{
+    font-family:'Allerta Stencil','JetBrains Mono',monospace;
+    font-size:40px; font-weight:400; letter-spacing:.1em; text-transform:uppercase;
+    margin:0; color:#fff;
+  }
+  #scene-veterans .dossier-intro{
+    font-size:13.5px; line-height:1.7; color:rgba(255,255,255,0.75);
+    font-style:italic; padding:18px 0 0; margin-bottom:4px;
+  }
+  #scene-veterans h2.dossier-h2{
+    font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#C9A24A;
+    margin:40px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(201,162,74,0.35);
+  }
+  #scene-veterans .dossier-wrap p{ font-size:15px; line-height:1.75; color:#fff; margin:0 0 14px; }
+  #scene-veterans .dossier-wrap p:last-child{ margin-bottom:0; }
+  #scene-veterans .dossier-back{
+    display:block; width:fit-content; margin:60px auto 0;
+    background:transparent; border:1px solid #fff; color:#fff;
+    font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.08em;
+    text-transform:uppercase; padding:12px 26px; cursor:pointer; text-decoration:none;
+  }
+  #scene-veterans .dossier-back:hover{ background:#fff; color:#000; }
+
+  #scene-cunit { background:#000; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #scene-cunit .dossier-backdrop{ position:fixed; inset:0; background:#000; z-index:-1; }
+  #scene-cunit .dossier-wrap{ max-width:780px; margin:0 auto; padding:32px 24px 100px; color:#fff; }
+  #scene-cunit .dossier-title-row{
+    display:flex; align-items:center; justify-content:center; gap:16px; padding-top:28px;
+  }
+  #scene-cunit .dossier-title-row img{ height:60px; width:auto; object-fit:contain; }
+  #scene-cunit h1.dossier-h1{
+    font-family:'Allerta Stencil','JetBrains Mono',monospace;
+    font-size:40px; font-weight:400; letter-spacing:.1em; text-transform:uppercase;
+    margin:0; color:#fff;
+  }
+  #scene-cunit .dossier-intro{
+    font-size:13.5px; line-height:1.7; color:rgba(255,255,255,0.75);
+    font-style:italic; padding:18px 0 0; margin-bottom:4px;
+  }
+  #scene-cunit h2.dossier-h2{
+    font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#C9A24A;
+    margin:40px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(201,162,74,0.35);
+  }
+  #scene-cunit h3.dossier-h3{
+    font-size:14px; letter-spacing:.06em; text-transform:none; color:#C9A24A;
+    margin:26px 0 8px; font-weight:700;
+  }
+  #scene-cunit .dossier-wrap p{ font-size:15px; line-height:1.75; color:#fff; margin:0 0 14px; }
+  #scene-cunit .dossier-wrap p:last-child{ margin-bottom:0; }
+  #scene-cunit .dossier-back{
+    display:block; width:fit-content; margin:60px auto 0;
+    background:transparent; border:1px solid #fff; color:#fff;
+    font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.08em;
+    text-transform:uppercase; padding:12px 26px; cursor:pointer; text-decoration:none;
+  }
+  #scene-cunit .dossier-back:hover{ background:#fff; color:#000; }
+
+  #scene-funit { background:#000; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #scene-funit .dossier-backdrop{ position:fixed; inset:0; background:#000; z-index:-1; }
+  #scene-funit .dossier-wrap{ max-width:780px; margin:0 auto; padding:32px 24px 100px; color:#fff; }
+  #scene-funit .dossier-title-row{
+    display:flex; align-items:center; justify-content:center; gap:16px; padding-top:28px;
+  }
+  #scene-funit .dossier-title-row img{ height:60px; width:auto; object-fit:contain; }
+  #scene-funit h1.dossier-h1{
+    font-family:'Allerta Stencil','JetBrains Mono',monospace;
+    font-size:40px; font-weight:400; letter-spacing:.1em; text-transform:uppercase;
+    margin:0; color:#fff;
+  }
+  #scene-funit .dossier-intro{
+    font-size:13.5px; line-height:1.7; color:rgba(255,255,255,0.75);
+    font-style:italic; padding:18px 0 0; margin-bottom:4px;
+  }
+  #scene-funit h2.dossier-h2{
+    font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#C9A24A;
+    margin:40px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(201,162,74,0.35);
+  }
+  #scene-funit .dossier-wrap p{ font-size:15px; line-height:1.75; color:#fff; margin:0 0 14px; }
+  #scene-funit .dossier-wrap p:last-child{ margin-bottom:0; }
+  #scene-funit .dossier-back{
+    display:block; width:fit-content; margin:60px auto 0;
+    background:transparent; border:1px solid #fff; color:#fff;
+    font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.08em;
+    text-transform:uppercase; padding:12px 26px; cursor:pointer; text-decoration:none;
+  }
+  #scene-funit .dossier-back:hover{ background:#fff; color:#000; }
+  /* ===== Trench Mercs journey scenes ===== */
+  #scene-tm-assembly, #scene-tm-lorry, #scene-tm-trench { background:#000; }
+  #scene-tm-assembly .tm-stage, #scene-tm-lorry .tm-stage, #scene-tm-trench .tm-stage {
+    position:relative; width:100%; height:100%; overflow:hidden;
+  }
+  #scene-tm-assembly .tm-stage img, #scene-tm-lorry .tm-stage img, #scene-tm-trench .tm-stage img {
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+
+  /* Subtle vehicle motion for the lorry scene */
+  @keyframes tm-lorry-jostle {
+    0%   { transform: translate(0px, 0px) rotate(0deg) scale(1.04); }
+    12%  { transform: translate(-2px, 1px) rotate(-0.15deg) scale(1.04); }
+    24%  { transform: translate(1px, -1px) rotate(0.1deg) scale(1.04); }
+    36%  { transform: translate(-1px, 2px) rotate(-0.2deg) scale(1.04); }
+    48%  { transform: translate(2px, 0px) rotate(0.15deg) scale(1.04); }
+    60%  { transform: translate(-1px, -1px) rotate(-0.1deg) scale(1.04); }
+    72%  { transform: translate(1px, 1px) rotate(0.2deg) scale(1.04); }
+    84%  { transform: translate(-2px, -1px) rotate(-0.1deg) scale(1.04); }
+    100% { transform: translate(0px, 0px) rotate(0deg) scale(1.04); }
+  }
+  #scene-tm-lorry .tm-stage img {
+    animation: tm-lorry-jostle 2.6s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  /* Heat glare for the Trench Arrival scene: full scene sun-flare sweep */
+  .tm-sun-glare {
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background: radial-gradient(circle at 53% 6%,
+      rgba(255,255,250,1) 0%,
+      rgba(255,250,235,0.95) 10%,
+      rgba(255,240,210,0.8) 25%,
+      rgba(255,225,180,0.55) 45%,
+      rgba(255,210,150,0.3) 70%,
+      rgba(255,200,130,0.12) 100%);
+    opacity: 0;
+    will-change: opacity;
+  }
+  @keyframes tm-sun-flare {
+    0%   { opacity: 0.1; }
+    61%  { opacity: 0.1; }
+    73%  { opacity: 0.85; }
+    78%  { opacity: 0.85; }
+    91%  { opacity: 0.1; }
+    100% { opacity: 0.1; }
+  }
+  .tm-heat-tint {
+    position:absolute; inset:0;
+    background: rgba(255, 200, 120, 0.06);
+    mix-blend-mode: overlay;
+    pointer-events:none;
+  }
+  .tm-darken {
+    position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.0) 35%);
+    pointer-events:none;
+  }
+  .tm-info-tag, .tm-next-tag {
+    position:absolute;
+    bottom:6%;
+    background: rgba(10,8,4,0.6);
+    border: 1px solid rgba(201,162,74,0.5);
+    color:#e6dcc3;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    padding:0 18px;
+    width:170px;
+    height:38px;
+    white-space:nowrap;
+    text-align:center;
+    justify-content:center;
+    cursor:pointer;
+    outline:none;
+    transition: opacity 0.25s ease, background 0.2s ease;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    box-sizing:border-box;
+    line-height:1;
+  }
+  .tm-info-tag { left:5%; }
+  .tm-next-tag { right:5%; }
+  .tm-info-tag .tm-plus, .tm-next-tag .tm-arrow { color:#C9A24A; font-size:13px; font-weight:700; }
+  .tm-info-tag:hover, .tm-next-tag:hover { background: rgba(10,8,4,0.85); }
+  .tm-info-tag.tm-hidden, .tm-next-tag.tm-hidden { opacity:0; pointer-events:none; }
+  .tm-info-panel {
+    position:absolute;
+    left:50%;
+    bottom:0;
+    transform:translateX(-50%) translateY(100%);
+    width:min(680px, 92vw);
+    background: rgba(6,5,3,0.92);
+    border-top: 1px solid rgba(201,162,74,0.4);
+    padding: 26px 28px 30px;
+    transition: transform 0.35s ease;
+    max-height: 60vh;
+    overflow-y:auto;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .tm-info-panel.tm-open { transform:translateX(-50%) translateY(0); }
+  .tm-panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .tm-info-panel h2 {
+    font-size:13px; letter-spacing:3px; text-transform:uppercase; color:#C9A24A; font-weight:700;
+  }
+  .tm-close-btn {
+    background:transparent; border:1px solid rgba(230,220,195,0.4); color:#e6dcc3;
+    width:26px; height:26px; font-size:14px; line-height:1; cursor:pointer; outline:none;
+  }
+  .tm-info-panel p { color:#fff; font-size:14.5px; line-height:1.75; margin:0; }
+  .tm-location-tag {
+    position:absolute;
+    top:6%;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:#C9A24A;
+    text-align:center;
+    -webkit-text-stroke: 0.75px #000;
+    paint-order: stroke fill;
+  }
+  /* ===== Ember West: helicopter transit + campus scenes ===== */
+  #scene-ew-heli, #scene-ew-campus { background:#000; }
+  #scene-ew-heli .ew-stage, #scene-ew-campus .ew-stage {
+    position:relative; width:100%; height:100%; overflow:hidden;
+  }
+  #scene-ew-heli .ew-stage img, #scene-ew-campus .ew-stage img {
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .ew-shake-wrap {
+    position:absolute; inset:0;
+    animation: ew-heli-vibrate 0.42s ease-in-out infinite;
+  }
+  @keyframes ew-heli-vibrate {
+    0%   { transform: translate(0px, 0px); }
+    20%  { transform: translate(-1px, 1px); }
+    40%  { transform: translate(1px, -1px); }
+    60%  { transform: translate(-1px, -1px); }
+    80%  { transform: translate(1px, 1px); }
+    100% { transform: translate(0px, 0px); }
+  }
+  .ew-rotor-flicker {
+    position:absolute; inset:0;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    animation: ew-rotor-strobe 0.9s linear infinite;
+  }
+  @keyframes ew-rotor-strobe {
+    0%   { opacity: 0; }
+    4%   { opacity: 0.22; }
+    8%   { opacity: 0; }
+    9%   { opacity: 0; }
+    13%  { opacity: 0.18; }
+    17%  { opacity: 0; }
+    47%  { opacity: 0; }
+    51%  { opacity: 0.22; }
+    55%  { opacity: 0; }
+    56%  { opacity: 0; }
+    60%  { opacity: 0.18; }
+    64%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+  .ew-darken {
+    position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.0) 30%);
+    pointer-events:none;
+  }
+  .ew-fade-to-black {
+    position:absolute; inset:0;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 1s ease;
+    z-index:5;
+  }
+  .ew-fade-to-black.active { opacity:1; }
+
+  .ew-title-tag {
+    position:absolute; top:5%; left:50%; transform:translateX(-50%);
+    font-size:11px; letter-spacing:5px; text-transform:uppercase;
+    color:#C9A24A; text-align:center;
+    -webkit-text-stroke: 0.75px #000; paint-order: stroke fill;
+  }
+  .ew-building-tag {
+    position:absolute;
+    background: rgba(10,8,4,0.65);
+    border: 1px solid rgba(201,162,74,0.55);
+    color:#e6dcc3;
+    font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+    padding:10px 16px; text-align:center;
+    cursor:pointer; outline:none;
+    transition: opacity 0.25s ease, background 0.2s ease;
+  }
+  .ew-building-tag:hover { background: rgba(10,8,4,0.9); }
+  .ew-building-tag.ew-hidden { opacity:0; pointer-events:none; }
+  #ewTagIntel   { left:6%;  top:40%; width:190px; }
+  #ewTagAdmin   { left:50%; top:26%; width:200px; transform:translateX(-50%); }
+  #ewTagOfficer { right:6%; top:40%; width:190px; }
+
+  .ew-back-tag {
+    position:absolute;
+    bottom:6%; right:5%;
+    background: rgba(10,8,4,0.65);
+    border: 1px solid rgba(230,220,195,0.4);
+    color:#e6dcc3;
+    font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+    padding:0 18px;
+    width:170px; height:38px;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; box-sizing:border-box;
+    cursor:pointer; outline:none;
+    transition: background 0.2s ease;
+  }
+  .ew-back-tag:hover { background: rgba(10,8,4,0.9); }
+
+  .ew-info-panel {
+    position:absolute; left:50%; bottom:0;
+    transform:translateX(-50%) translateY(100%);
+    width:min(720px, 92vw);
+    background: rgba(6,5,3,0.94);
+    border-top: 1px solid rgba(201,162,74,0.4);
+    padding: 26px 28px 30px;
+    transition: transform 0.35s ease;
+    max-height: 72vh; overflow-y:auto;
+  }
+  .ew-info-panel.ew-open { transform:translateX(-50%) translateY(0); }
+  .ew-panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .ew-info-panel h2 {
+    font-size:14px; letter-spacing:3px; text-transform:uppercase; color:#C9A24A; font-weight:700;
+  }
+  .ew-info-panel h3 {
+    font-size:14px; letter-spacing:3px; text-transform:uppercase; color:#C9A24A;
+    margin:22px 0 10px; font-weight:700;
+  }
+  .ew-close-btn {
+    background:transparent; border:1px solid rgba(230,220,195,0.4); color:#e6dcc3;
+    width:26px; height:26px; font-size:14px; line-height:1; cursor:pointer; outline:none;
+    flex-shrink:0;
+  }
+  .ew-info-panel p { color:#fff; font-size:14.5px; line-height:1.75; margin:0 0 14px; }
+  .ew-info-panel p:last-child { margin-bottom:0; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="scene active" id="scene-entrance">
+    <img id="entranceImg" src="image-01.jpg" alt="FLAME Academy entrance">
+    <div class="hotspot door" data-l="42" data-t="28" data-w="15" data-h="35" onclick="goTo('scene-hall')"></div>
+    <div class="prompt-tag">Approach the entrance</div>
+  </div>
+
+  <div class="scene" id="scene-hall">
+    <img id="hallImg" src="image-02.jpg" alt="FLAME Academy entrance hall">
+    <div class="hotspot forward" data-l="41" data-t="13" data-w="19" data-h="51" onclick="goTo('scene-rotunda')"></div>
+    <div class="hotspot faction" data-l="10" data-t="80" data-w="21" data-h="8" onclick="goTo('scene-funit')"><span class="hotspot-sign">F UNIT</span></div>
+    <div class="hotspot faction" data-l="39.5" data-t="80" data-w="21" data-h="8" onclick="goTo('scene-cunit')"><span class="hotspot-sign">C UNIT</span></div>
+    <div class="hotspot faction" data-l="69" data-t="80" data-w="21" data-h="8" onclick="goTo('scene-veterans')"><span class="hotspot-sign">VETERANS</span></div>
+    <div class="return-control" onclick="goTo('scene-entrance')">Back</div>
+    <div class="prompt-tag hall-prompt">Click the statue to venture deeper into the academy</div>
+  </div>
+
+  <div class="scene" id="scene-rotunda">
+    <img id="rotundaImg" src="image-03.jpg" alt="FLAME Academy rotunda">
+    <div class="return-control" onclick="goTo('scene-hall')">Back</div>
+    <div class="hotspot faction" data-l="17" data-t="79" data-w="27" data-h="10" onclick="goTo('scene-ew-heli'); ewStartHeliSequence();"><span class="hotspot-sign">EMBER WEST</span></div>
+    <div class="hotspot faction" data-l="56" data-t="79" data-w="27" data-h="10" onclick="goTo('scene-tm-assembly')"><span class="hotspot-sign">TRENCH MERCS</span></div>
+  </div>
+
+  <div class="scene" id="scene-faction">
+    <div class="faction-heading" id="factionHeading"></div>
+    <div class="return-control" id="factionReturn" onclick="goTo('scene-hall')">Back</div>
+  </div>
+
+  <div class="scene" id="scene-tm-assembly">
+    <div class="tm-stage">
+      <img src="image-04.jpg" alt="Assembly Hall">
+      <div class="tm-darken"></div>
+      <div class="tm-location-tag">FLAME Academy — Assembly Hall</div>
+
+      <button class="tm-info-tag" id="tmInfoTag1" onclick="tmOpenPanel(1)">
+        <span class="tm-plus">+</span> Read More
+      </button>
+      <button class="tm-next-tag" id="tmNextTag1" onclick="goTo('scene-tm-lorry')">
+        Continue <span class="tm-arrow">→</span>
+      </button>
+
+      <div class="tm-info-panel" id="tmInfoPanel1">
+        <div class="tm-panel-head">
+          <h2>Assembly &amp; Classification</h2>
+          <button class="tm-close-btn" onclick="tmClosePanel(1)">✕</button>
+        </div>
+        <p>Upon completion of training, all graduating cadets are assembled for final classification and deployment. Cadets showing F Unit potential are identified for assessment. Cadets demonstrating exceptional aptitude in command, combat instruction or specialist disciplines may instead be retained by the Academy for instructor development. All remaining personnel, typically accounting for approximately ninety percent of the graduating class, are assigned to frontline service at the Trench. For most cadets, graduation does not mark the end of their training. It marks their transfer to active duty.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene-tm-lorry">
+    <div class="tm-stage">
+      <img src="image-05.jpg" alt="Lorry transport south">
+      <div class="tm-darken"></div>
+      <div class="tm-location-tag">The Journey South</div>
+
+      <button class="tm-info-tag" id="tmInfoTag2" onclick="tmOpenPanel(2)">
+        <span class="tm-plus">+</span> Read More
+      </button>
+      <button class="tm-next-tag" id="tmNextTag2" onclick="goTo('scene-tm-trench')">
+        Continue <span class="tm-arrow">→</span>
+      </button>
+
+      <div class="tm-info-panel" id="tmInfoPanel2">
+        <div class="tm-panel-head">
+          <h2>The Journey South</h2>
+          <button class="tm-close-btn" onclick="tmClosePanel(2)">✕</button>
+        </div>
+        <p>Once final assignments have been issued, Trench-bound cadets are equipped for active service and transferred directly to military transport. The journey south takes two days, with convoys stopping overnight at a designated military camp before continuing towards the defensive line the following morning. For many cadets, the journey is their first opportunity to consider what their assignment actually means. Stories of the Trench circulate throughout the Academy, some speaking of honour, service and the reputation earned by those who hold the line, others of the conditions and realities awaiting those deployed there. A small number of cadets fail to report for onward transport during the overnight halt, abandoning their deployment rather than completing the journey south.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene-tm-trench">
+    <div class="tm-stage">
+      <img src="image-06.jpg" alt="Central Command gate">
+      <div class="tm-heat-tint"></div>
+      <div class="tm-sun-glare"></div>
+      <div class="tm-darken"></div>
+      <div class="tm-location-tag">The Trench — Central Command</div>
+
+      <button class="tm-info-tag" id="tmInfoTag3" onclick="tmOpenPanel(3)">
+        <span class="tm-plus">+</span> Read More
+      </button>
+      <button class="tm-next-tag" id="tmNextTag3" onclick="goTo('scene-rotunda')">
+        Back to Academy
+      </button>
+
+      <div class="tm-info-panel" id="tmInfoPanel3">
+        <div class="tm-panel-head">
+          <h2>Arrival at the Trench</h2>
+          <button class="tm-close-btn" onclick="tmClosePanel(3)">✕</button>
+        </div>
+        <p>Newly arrived FLAME recruits spend their first week at the main Central Command hub, acclimatising to the heat, conditions and daily routine of the Trench before being cleared for deployment. Recruits remain in their cadet groups throughout this period, with each group placed under the charge of a Trench Mentor, a serving FLAME soldier with years on the defensive line. Their job is simple: teach the new arrivals how the Trench works, what is expected of them and how to survive once Academy training gives way to frontline service. At the end of the week, the groups are broken up and personnel assigned across the defensive line. Some are sent west to Western and Atlantic Command, others east to Eastern and Pacific Command, while the remainder stay within the Central Command sector. From there, they join their assigned units and begin life at the Trench.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene-ew-heli">
+    <div class="ew-stage">
+      <div class="ew-shake-wrap">
+        <img src="image-07.jpg" alt="Helicopter transit to Ember West">
+      </div>
+      <div class="ew-rotor-flicker"></div>
+      <div class="ew-darken"></div>
+      <div class="ew-fade-to-black" id="ewFadeOut"></div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene-ew-campus">
+    <div class="ew-stage">
+      <img src="image-08.jpg" alt="Ember West campus">
+      <div class="ew-darken"></div>
+      <div class="ew-title-tag">Ember West — Main Campus</div>
+      <div class="ew-back-tag" onclick="goTo('scene-rotunda')">Back to Academy</div>
+
+      <button class="ew-building-tag" id="ewTagIntel" onclick="ewOpenPanel('ewPanelIntel')">Intelligence &amp; Analysis</button>
+      <button class="ew-building-tag" id="ewTagAdmin" onclick="ewOpenPanel('ewPanelAdmin')">Administration &amp; Command</button>
+      <button class="ew-building-tag" id="ewTagOfficer" onclick="ewOpenPanel('ewPanelOfficer')">Officer Development</button>
+
+      <div class="ew-info-panel" id="ewPanelIntel">
+        <div class="ew-panel-head">
+          <h2>Intelligence &amp; Analysis</h2>
+          <button class="ew-close-btn" onclick="ewClosePanel('ewPanelIntel')">✕</button>
+        </div>
+        <p>Intelligence &amp; Analysis houses Ember West&rsquo;s dedicated research and analytical division, providing specialist training for cadets selected for intelligence-based roles within the Green Guards. Recruits assigned here are trained in intelligence collection, surveillance, data analysis, threat assessment, communications monitoring and the identification of patterns across large volumes of information. Particular emphasis is placed on the acquisition, verification and assessment of intelligence before its conversion into actionable operational reports for Green Guard command. Those who demonstrate exceptional ability often attract the attention of Cybertech, which recruits directly from Ember West&rsquo;s highest-performing intelligence cadets.</p>
+      </div>
+
+      <div class="ew-info-panel" id="ewPanelAdmin">
+        <div class="ew-panel-head">
+          <h2>Administration &amp; Command</h2>
+          <button class="ew-close-btn" onclick="ewClosePanel('ewPanelAdmin')">✕</button>
+        </div>
+        <p>Administration &amp; Command serves as the operational headquarters of Ember West and the centre of authority for the academy. Natalie Spykes was Ember West&rsquo;s first director, appointed by Luke Walker when he founded the academy in the aftermath of the Greentown riots. She has held the post ever since on the strength of her record. As director she oversees academy operations, cadet records, personnel assignments and coordination with Green Guard command as each new class approaches graduation. The building houses Ember West&rsquo;s senior staff and administrative offices. It functions as the principal point of contact between the academy, Green Guard leadership and the wider Greentown government. Matters concerning cadet performance, resource allocation, disciplinary action, deployment readiness and institutional policy are processed through this building before being passed to the relevant command authority.</p>
+        <h3>Relationship with FLAME Academy</h3>
+        <p>Ember West was founded by Luke Walker alongside the Green Guard as part of Greentown&rsquo;s response to the riots, creating a permanent training and security structure capable of supporting the city without relying entirely on outside forces. FLAME&rsquo;s intervention during the riots left a lasting impression on Greentown. The relationship between the two institutions remained close from the academy&rsquo;s earliest years onward. Once Ember West had begun producing cadets of exceptional ability, Pyro proposed a route into FLAME for its strongest cadets. Luke Walker brokered the arrangement with Spykes. In exchange, FLAME agreed to put Greentown first if it ever needed help. Cadets whose performance placed them beyond the requirements of conventional Green Guard service can now be transferred to FLAME Academy for further assessment and advanced training. Those accepted are retrained to FLAME standards before being considered for specialist assignments, instructional roles or other positions where their abilities can be put to greater use.</p>
+      </div>
+
+      <div class="ew-info-panel" id="ewPanelOfficer">
+        <div class="ew-panel-head">
+          <h2>Officer Development</h2>
+          <button class="ew-close-btn" onclick="ewClosePanel('ewPanelOfficer')">✕</button>
+        </div>
+        <p>Officer Development forms the primary training arm of Ember West and is where cadets spend the majority of their time during their years at the academy. Cadets receive their preliminary training here in firearms, combat skills, drone operation, military doctrine, leadership and battlefield decision-making, developing the skills required for eventual service within the Green Guards. Further beyond the main campus are the cadet barracks and extensive forest training grounds, where instruction moves from controlled exercises to field operations. Cadets are trained in woodland navigation, concealment, ambush tactics, small-unit manoeuvres and guerrilla warfare, reflecting the unconventional methods that have long formed a central part of Green Guard doctrine. The primary purpose of Ember West is to maintain a steady supply of trained personnel for Greentown&rsquo;s military, with the majority of graduates entering the Green Guards. The academy operates on a considerably smaller scale than FLAME Academy, reflecting the smaller force it exists to support.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene-veterans">
+    <div class="dossier-backdrop"></div>
+    <div class="dossier-wrap">
+
+      <div class="dossier-title-row">
+        <img src="image-09.png" alt="FLAME emblem">
+        <h1 class="dossier-h1">Veterans</h1>
+      </div>
+
+      <p class="dossier-intro">F Unit (FLAME Unit) is FLAME&rsquo;s elite four-person specialist operations designation. Each unit trains together over an extended period, developing the trust and tactical coordination required to operate as a single entity. Because that cohesion cannot be replaced, the loss of one member results in the unit&rsquo;s dissolution and the selection of a new four-person team.</p>
+
+      <h2 class="dossier-h2">Overview</h2>
+      <p>The Veterans are FLAME&rsquo;s longest-serving active F Unit, remaining together for more than thirty years. While successive F Units have been dissolved through operational losses, all four members survived decades of combat deployments, espionage operations and military assignments without replacement. Their service, experience and operational record established the unit as one of the most renowned teams in FLAME history.</p>
+
+      <h2 class="dossier-h2">Operational Record</h2>
+      <p>The Veterans undertook some of FLAME&rsquo;s highest-priority operations. They served wherever experience and operational precision were required. Their confirmed service record includes a decisive role in the Greentown riots. They fought alongside the PMC during the Second Hatchet Hills Rebellion. They captured several high-profile leaders responsible for organised unrest throughout the southern provinces. They prevented two assassination attempts against King Wayne Whitfield and members of the Whitfield family. They also successfully disrupted a planned attack against the Citadel. Alongside these operations, the unit carried out numerous espionage missions and military deployments across the continent. They regularly supported Commander David Whitfield whenever the PMC required FLAME assistance.</p>
+
+      <h2 class="dossier-h2">Personnel</h2>
+      <p>The Veterans consist of four ageing FLAME operatives. Within FLAME, personnel commonly refer to them as &ldquo;V Unit&rdquo; (Veterans Unit), a nickname that reportedly began as a joke among younger recruits who believed the team had grown too old after twenty years of active service. A decade later, following years of successful operations and an unmatched service record, the nickname had become a mark of respect throughout FLAME. Their individual identities remain classified due to the sensitive nature of the unit&rsquo;s assignments and the continued operational significance of past missions.</p>
+
+      <h2 class="dossier-h2">Reputation</h2>
+      <p>The Veterans are widely regarded as one of the most respected teams in FLAME history. Their decades of continuous service and uncompromising professionalism have earned them the admiration of younger recruits. Senior commanders hold the unit in the highest regard. Opposing forces treat them with caution. They are also the only F Unit in FLAME history to have served under three Commanders. Within FLAME, the unit is considered the benchmark against which all future F Units are judged.</p>
+
+      <a class="dossier-back" onclick="goTo('scene-hall')">Back to FLAME Academy</a>
+
+    </div>
+  </div>
+
+  <div class="scene" id="scene-cunit">
+    <div class="dossier-backdrop"></div>
+    <div class="dossier-wrap">
+
+      <div class="dossier-title-row">
+        <img src="image-09.png" alt="FLAME emblem">
+        <h1 class="dossier-h1">C Unit</h1>
+      </div>
+
+      <h2 class="dossier-h2">Overview</h2>
+      <p>C Unit, formally designated Chameleon Unit, is FLAME&rsquo;s intelligence network. Created under Commander Pyro, its name reflects the principle upon which the unit was built. Like a chameleon blending into its surroundings, each operative establishes a life within the environment they are assigned to observe. They gather intelligence without revealing their connection to FLAME. Their effectiveness depends upon their ability to become part of the world around them rather than merely observe it from outside.</p>
+
+      <h2 class="dossier-h2">Operational Role</h2>
+      <p>C Unit gathers intelligence across different areas of Eurussian society and infrastructure. Each member operates within a different sphere and provides access to a distinct source of information. Mara operates within the streets of Phoenix. Lumos maintains his career within Cybertech. Thorne serves within the Citadel Guard. Hussain works inside the Citadel&rsquo;s administrative structure. Together, they provide FLAME with intelligence drawn directly from each of these environments.</p>
+
+      <h2 class="dossier-h2">Operating Doctrine</h2>
+      <p>Separation is fundamental to C Unit. Its operatives work independently and are required to maintain distance from one another while undercover. Communication through messages is permitted when necessary, but face-to-face contact is strictly prohibited. Members must never be seen together. The rule exists to protect both the individual operative and the wider network. If one member is exposed, their connection to FLAME does not automatically reveal the identities or locations of the others. Each operative therefore remains isolated enough to continue functioning even if another member is compromised.</p>
+
+      <h2 class="dossier-h2">Personnel and Recruitment</h2>
+      <p>C Unit has no single recruitment route. Its four operatives entered the network through different circumstances, reflecting the unconventional nature of the unit itself. Three were identified by Pyro over a period of years. The fourth approached FLAME independently.</p>
+
+      <h3 class="dossier-h3">Mara</h3>
+      <p>Mara first became known to Pyro while her husband was training at FLAME Academy. She spent considerable time there during those years, allowing Pyro to get to know her personally. Her husband later served at the trench, where he was killed and never returned home. Mara remained within her community, where she became well known and well liked. Her genuinely kind-hearted nature allows her to move through the streets without attracting suspicion. Pyro recognised the value of her patience, discretion and quiet presence. When C Unit required someone capable of operating within the civilian population, he personally selected her.</p>
+
+      <h3 class="dossier-h3">Lumos</h3>
+      <p>Pyro first encountered Lumos during a tour of Cybertech&rsquo;s new facility with Wayne Whitfield. Lumos was still a young engineer at the time and an up-and-coming figure within the organisation. A conversation during the visit was enough for Pyro to recognise his technical ability and strategic mindset. He remained in contact with Lumos afterwards. As Cybertech developed and C Unit took shape, Pyro recruited him into the network. Lumos continued his career within Cybertech and eventually rose to become its Director. His association with C Unit remains unknown to Cybertech. Any activity undertaken on behalf of FLAME is deliberately kept outside official Cybertech records.</p>
+
+      <h3 class="dossier-h3">Thorne</h3>
+      <p>Thorne and Flint were close friends during their early years before their careers took them in different directions. Flint chose to progress through FLAME Academy. Thorne instead enlisted with the Citadel Guard. When Pyro identified the need for an operative inside the Citadel Guard, Flint recommended Thorne for the role and reached out to his former friend. Thorne was subsequently recruited into C Unit, providing FLAME with a source of intelligence from inside the Citadel Guard.</p>
+
+      <h3 class="dossier-h3">Hussain</h3>
+      <p>Hussain entered C Unit differently from its other operatives. Pyro did not identify or approach him. Hussain came to FLAME himself. Already working within the Citadel&rsquo;s administrative wing and positioned close to Lionel Brady, he offered access from inside an institution largely beyond FLAME&rsquo;s direct reach. Following private meetings with Pyro, Hussain was accepted into C Unit and remained in his existing role. The circumstances surrounding his decision to approach FLAME remain classified.</p>
+
+      <h2 class="dossier-h2">Relationship with FLAME</h2>
+      <p>C Unit exists because FLAME&rsquo;s prominence is both a strength and a limitation. Its personnel can be deployed across the continent, but the organisation cannot maintain a visible presence everywhere it needs information. Chameleon Unit was created to overcome that limitation.</p>
+      <p>No equivalent formation existed under previous FLAME Commanders. The circumstances of their respective eras had not required one. After taking command, Pyro anticipated that FLAME&rsquo;s intelligence requirements would change and created C Unit in response. Its operatives became an extension of FLAME&rsquo;s reach, giving the organisation eyes and ears beyond the practical scope of its conventional operations.</p>
+
+      <a class="dossier-back" onclick="goTo('scene-hall')">Back to FLAME Academy</a>
+
+    </div>
+  </div>
+
+  <div class="scene" id="scene-funit">
+    <div class="dossier-backdrop"></div>
+    <div class="dossier-wrap">
+
+      <div class="dossier-title-row">
+        <img src="image-09.png" alt="FLAME emblem">
+        <h1 class="dossier-h1">F Unit</h1>
+      </div>
+
+      <p class="dossier-intro">F Unit (FLAME Unit) is FLAME&rsquo;s elite four-person specialist operations designation. Each unit trains together over an extended period, developing the trust and tactical coordination required to operate as a single entity. Because that cohesion cannot be replaced, the loss of one member results in the unit&rsquo;s dissolution and the selection of a new four-person team.</p>
+
+      <h2 class="dossier-h2">Overview</h2>
+      <p>The current F Unit has remained operational for eight years under the leadership of Cole, alongside Ember, Ash and Smoke. The four were selected during Commander Pyro&rsquo;s tenure and have since established a strong operational record within FLAME. All members are highly proficient with firearms and close-quarters combat. Their individual areas of expertise provide the unit with additional capability across weapons, technology, demolitions, long-range engagements and bladed combat. Despite persistent criticism surrounding the team, their effectiveness in the field has rarely been questioned.</p>
+
+      <h2 class="dossier-h2">Personnel</h2>
+      <p>Cole holds command responsibility within the unit and demonstrates particular proficiency with rifles, light machine guns and heavier battlefield hardware. Ember specialises in technology and demolitions. Ash operates primarily as the unit&rsquo;s sniper, with long-range precision considered his strongest discipline. Smoke demonstrates exceptional proficiency with knives and other bladed weapons. Ash and Smoke are siblings and were the only two members known to have an established relationship prior to the unit&rsquo;s formation.</p>
+      <p>Early training records indicate repeated friction between Cole and Ash. Accounts from the period attribute this largely to competition between the two men, with neither initially willing to concede authority or ability to the other. No significant continuation of this behaviour has been recorded during later service. The two are now known to maintain a close friendship.</p>
+      <p>Rumours concerning a relationship between Cole and Ember have circulated among FLAME personnel. Neither has confirmed the claims. No formal record exists establishing a relationship between the two operatives.</p>
+
+      <h2 class="dossier-h2">Relationship with the Veterans</h2>
+      <p>The current F Unit conducted several early deployments alongside the Veterans. During this period, the older unit provided considerable guidance to the newly formed team and assumed an informal mentoring role. Reports indicate that this arrangement was initially welcomed, with the Veterans contributing directly to the younger unit&rsquo;s development during its first years of active service.</p>
+      <p>Relations between the two units have since deteriorated. Members of the current F Unit are understood to believe that they have surpassed the need for continued guidance and have become increasingly unwilling to accept advice from their former mentors. Several run-ins have subsequently been recorded. The disagreement appears to stem primarily from the younger unit&rsquo;s rejection of a relationship they now consider outdated, rather than any dispute concerning operational capability.</p>
+
+      <h2 class="dossier-h2">Reputation</h2>
+      <p>Opinion surrounding the current F Unit remains divided. A number of FLAME Academy graduates and serving personnel consider the team arrogant, with criticism frequently directed towards their confidence and unwillingness to accept guidance from more experienced operatives. Their association with Commander Pyro has contributed further to this reputation. Because Pyro personally selected the four, accusations of favouritism have persisted throughout their service.</p>
+      <p>These criticisms have had little effect on assessments of the unit&rsquo;s professional capability. The four remain extremely skilled and have demonstrated a consistently high level of operational effectiveness throughout eight years of service. While their conduct and relationship with senior personnel continue to divide opinion within FLAME, their ability to perform the role for which they were selected remains firmly established.</p>
+
+      <h2 class="dossier-h2">F Unit Replacement Programme</h2>
+      <p>Liam Nelson, Trevor Brooks, Stephanie Shaw and Jacob Little are the four newest recruits selected for development as FLAME&rsquo;s next F Unit. Currently nine months into their training, none has yet received a FLAME code name or gained operational field experience. Most of their mission preparation has so far been conducted through virtual simulations, with the four being trained and moulded together as a contingency against the future dissolution of either the current F Unit or the Veterans. Their continued development ensures that a replacement four-person team is already in training should either active unit be lost.</p>
+
+      <a class="dossier-back" onclick="goTo('scene-hall')">Back to FLAME Academy</a>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="fade-overlay" id="fadeOverlay"></div>
+
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+<a class="wa-return" href="https://wapublishing.co.uk" target="_top">&larr; Return to WA Publishing</a>
+
+<script>
+  function positionHotspots(imgId, sceneId, selector) {
+    const img = document.getElementById(imgId);
+    const scene = document.getElementById(sceneId);
+    if (!img || !img.naturalWidth) return;
+    const containerW = scene.clientWidth;
+    const containerH = scene.clientHeight;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+    const scale = Math.min(containerW / naturalW, containerH / naturalH);
+    const renderedW = naturalW * scale;
+    const renderedH = naturalH * scale;
+    const offsetX = (containerW - renderedW) / 2;
+    const offsetY = (containerH - renderedH) / 2;
+
+    scene.querySelectorAll(selector).forEach(cell => {
+      const l = parseFloat(cell.dataset.l) / 100 * naturalW;
+      const t = parseFloat(cell.dataset.t) / 100 * naturalH;
+      const w = parseFloat(cell.dataset.w) / 100 * naturalW;
+      const h = parseFloat(cell.dataset.h) / 100 * naturalH;
+      cell.style.left = (offsetX + l * scale) + 'px';
+      cell.style.top = (offsetY + t * scale) + 'px';
+      cell.style.width = (w * scale) + 'px';
+      cell.style.height = (h * scale) + 'px';
+    });
+  }
+
+  function positionAll() {
+    positionHotspots('entranceImg', 'scene-entrance', '.hotspot.door');
+    positionHotspots('hallImg', 'scene-hall', '.hotspot.forward, .hotspot.faction');
+    positionHotspots('rotundaImg', 'scene-rotunda', '.hotspot.faction');
+  }
+
+  function tmOpenPanel(n){
+    document.getElementById('tmInfoPanel'+n).classList.add('tm-open');
+    document.getElementById('tmInfoTag'+n).classList.add('tm-hidden');
+    document.getElementById('tmNextTag'+n).classList.add('tm-hidden');
+  }
+  function tmClosePanel(n){
+    document.getElementById('tmInfoPanel'+n).classList.remove('tm-open');
+    document.getElementById('tmInfoTag'+n).classList.remove('tm-hidden');
+    document.getElementById('tmNextTag'+n).classList.remove('tm-hidden');
+  }
+
+  function ewOpenPanel(id){
+    document.getElementById(id).classList.add('ew-open');
+    document.getElementById('ewTagIntel').classList.add('ew-hidden');
+    document.getElementById('ewTagAdmin').classList.add('ew-hidden');
+    document.getElementById('ewTagOfficer').classList.add('ew-hidden');
+  }
+  function ewClosePanel(id){
+    document.getElementById(id).classList.remove('ew-open');
+    document.getElementById('ewTagIntel').classList.remove('ew-hidden');
+    document.getElementById('ewTagAdmin').classList.remove('ew-hidden');
+    document.getElementById('ewTagOfficer').classList.remove('ew-hidden');
+  }
+  let ewHeliTimer = null;
+  function ewStartHeliSequence(){
+    document.getElementById('ewFadeOut').classList.remove('active');
+    clearTimeout(ewHeliTimer);
+    ewHeliTimer = setTimeout(function(){
+      document.getElementById('ewFadeOut').classList.add('active');
+      setTimeout(function(){ goTo('scene-ew-campus'); }, 1000);
+    }, 5000);
+  }
+
+  function openFaction(name, originScene) {
+    document.getElementById('factionHeading').textContent = name;
+    document.getElementById('factionReturn').setAttribute('onclick', "goTo('" + originScene + "')");
+    goTo('scene-faction');
+  }
+
+  window.addEventListener('resize', positionAll);
+
+  function goTo(targetId) {
+    const overlay = document.getElementById('fadeOverlay');
+    const scenes = document.querySelectorAll('.scene');
+    overlay.classList.add('active');
+    setTimeout(() => {
+      scenes.forEach(s => s.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      setTimeout(() => { overlay.classList.remove('active'); }, 60);
+      positionAll();
+    }, 550);
+  }
+
+  window.addEventListener('load', positionAll);
+  positionAll();
+
+  // ===== The Trench: now and then the sun flares through the gate =====
+  const TrenchGlare = (() => {
+    const scene = document.getElementById('scene-tm-trench'), glare = scene.querySelector('.tm-sun-glare');
+    const DUR = 9, PEAK = 0.82;
+    let next = null, start = null;
+    const R = (a, b) => a + Math.random() * (b - a);
+    function frame(now){
+      requestAnimationFrame(frame);
+      const here = scene.classList.contains('active');
+      if (!here) { next = null; start = null; glare.style.opacity = 0; return; }
+      if (next === null) next = now + R(3000, 5000);
+      let k = 0;
+      if (start === null && now >= next) start = now;
+      if (start !== null) {
+        const u = (now - start) / 1000 / DUR;
+        if (u >= 1) { start = null; next = now + R(30000, 45000); }
+        else k = Math.pow(Math.sin(Math.PI * u), 2);       // fades on, then fades off, with no steps or holds
+      }
+      glare.style.opacity = (k * PEAK).toFixed(3);
+    }
+    requestAnimationFrame(frame);
+    return {};
+  })();
+</script>
+
+</body>
+</html>
