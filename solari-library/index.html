@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explore Eurussia — The Whitfield Saga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --moss-dark:#1b2418;
+    --moss:#2b3a26;
+    --moss-light:#4a5d3a;
+    --stone:#8c8574;
+    --stone-dark:#5c584d;
+    --shadow:#0e0f0b;
+    --amber:#c9a24a;
+    --amber-dim:#7a5a1e;
+    --parchment:#e8e2d0;
+    --parchment-dim:#d8cfb4;
+    --ink:#2a2418;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--shadow);overflow:hidden;font-family:'Crimson Pro',serif;}
+  .scene{
+    position:fixed;inset:0;width:100%;height:100%;
+    background-size:cover;background-position:center;
+    transition:opacity 1.4s ease;
+  }
+  .scene.exterior{background-image:url('image-01.jpg');}
+  .scene.interior{background-image:url('image-02.jpg');opacity:0;pointer-events:none;}
+  .scene.interior.active{opacity:1;pointer-events:auto;}
+  .scene.exterior.hidden{opacity:0;pointer-events:none;}
+
+  .vignette{
+    position:absolute;inset:0;
+    background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+  }
+
+  /* ---- Exterior door hotspot ---- */
+  .door-hotspot{
+    position:absolute;
+    left:44.5%; top:33%; width:11%; height:38%;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .door-hotspot::after{
+    content:'';
+    position:absolute;inset:-6px;
+    border-radius:6px;
+    box-shadow:0 0 0 0 rgba(201,162,74,0);
+    transition:box-shadow .5s ease, background .5s ease;
+  }
+  .door-hotspot:hover::after{
+    box-shadow:0 0 40px 10px rgba(201,162,74,0.25);
+    background:rgba(201,162,74,0.06);
+  }
+  .entry-label{
+    position:absolute; left:50%; top:27%; transform:translateX(-50%);
+    font-family:'Cormorant Garamond',serif; font-size:0.95rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--parchment-dim); background:rgba(14,15,11,0.55); border:1px solid rgba(232,226,208,0.3);
+    padding:0.5rem 1.1rem; border-radius:20px;
+    pointer-events:none; white-space:nowrap;
+    animation:pulseLabel 2.6s ease-in-out infinite;
+  }
+  @keyframes pulseLabel{0%,100%{opacity:0.75;} 50%{opacity:1;}}
+
+  /* ---- Interior hotspots ---- */
+  .hotspot{
+    position:absolute;
+    cursor:pointer;
+    border-radius:4px;
+    transition:background .4s ease, box-shadow .4s ease;
+  }
+  .hotspot:hover{
+    background:rgba(201,162,74,0.10);
+    box-shadow:0 0 30px 6px rgba(201,162,74,0.18) inset;
+  }
+  .hs-bookshelf-left{ left:0%; top:8%; width:19%; height:46%; }
+  .hs-bookshelf-right{ left:82%; top:8%; width:18%; height:46%; }
+  .hs-table-left{ left:6%; top:56%; width:32%; height:34%; }
+  .hs-datapad{ left:56%; top:52%; width:32%; height:34%; }
+
+  .hs-hint{
+    position:absolute; pointer-events:none;
+    font-family:'Cormorant Garamond',serif; font-size:0.85rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--parchment-dim); background:rgba(14,15,11,0.6); border:1px solid rgba(232,226,208,0.3);
+    padding:0.45rem 0.9rem; border-radius:20px;
+    left:50%; top:50%; transform:translate(-50%,-50%);
+    text-align:center; white-space:nowrap;
+    opacity:0.9; transition:opacity .35s ease, background .35s ease;
+  }
+  .hotspot:hover .hs-hint{opacity:1; background:rgba(201,162,74,0.35); border-color:var(--amber);}
+  body.panel-open .hs-hint{opacity:0 !important;}
+
+  /* datapad signature flicker */
+  .datapad-glow{
+    position:absolute; left:22%; top:38%; width:56%; height:30%;
+    pointer-events:none; opacity:0;
+    background:linear-gradient(180deg, rgba(120,200,140,0.0) 0%, rgba(120,200,140,0.14) 45%, rgba(120,200,140,0.0) 100%);
+    filter:blur(1px);
+    transition:opacity .3s ease;
+  }
+  .hs-datapad:hover .datapad-glow{
+    opacity:1;
+    animation:flicker 1.8s steps(2,end) infinite;
+  }
+  .datapad-text{
+    position:absolute; left:26%; top:46%; width:48%;
+    font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#8fe3a0;
+    opacity:0; letter-spacing:0.03em; text-shadow:0 0 6px rgba(120,220,150,0.8);
+    pointer-events:none;
+  }
+  .hs-datapad:hover .datapad-text{
+    opacity:0.85; animation:typeFlicker 1.8s steps(1,end) infinite;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:0.9;} 8%{opacity:0.2;} 16%{opacity:1;} 40%{opacity:0.5;} 55%{opacity:1;} 70%{opacity:0.3;}
+  }
+  @keyframes typeFlicker{
+    0%,100%{opacity:0.85;} 10%{opacity:0.15;} 20%{opacity:0.85;} 60%{opacity:0.5;} 75%{opacity:0.9;}
+  }
+
+  /* ---- Panels ---- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(6,8,4,0.72);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .35s ease;
+    z-index:50; padding:3vh 3vw;
+  }
+  .overlay.active{opacity:1; pointer-events:auto;}
+  .panel{
+    width:min(900px, 100%); max-height:92vh; overflow-y:auto;
+    background:var(--parchment);
+    color:var(--ink);
+    border-radius:3px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.15);
+    padding:2.4rem 2.6rem 2.8rem;
+    position:relative;
+    transform:translateY(18px) scale(0.98);
+    transition:transform .35s ease;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px);
+  }
+  .overlay.active .panel{transform:translateY(0) scale(1);}
+  .panel.datapad-panel{
+    background:#0d130f;
+    color:#cfe8d4;
+    box-shadow:0 30px 80px rgba(0,0,0,0.7), 0 0 40px rgba(120,220,150,0.08) inset;
+  }
+  .panel-close{
+    position:absolute; top:1rem; right:1.2rem;
+    width:36px; height:36px; border-radius:50%;
+    border:1px solid var(--amber-dim); background:transparent;
+    color:var(--amber-dim); font-size:1.1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .2s ease, color .2s ease;
+  }
+  .panel-close:hover{background:var(--amber-dim); color:var(--parchment);}
+  .datapad-panel .panel-close{border-color:#8fe3a0; color:#8fe3a0;}
+  .datapad-panel .panel-close:hover{background:#8fe3a0; color:#0d130f;}
+
+  .panel h2{
+    font-family:'Cormorant Garamond',serif; font-weight:600; font-size:2.1rem;
+    margin:0 0 0.2rem; color:var(--amber-dim); letter-spacing:0.02em;
+  }
+  .datapad-panel h2{color:#8fe3a0; font-family:'JetBrains Mono',monospace; font-size:1.3rem; letter-spacing:0.05em;}
+  .panel .subtitle{
+    font-family:'Cormorant Garamond',serif; font-style:italic; color:var(--stone-dark);
+    margin:0 0 1.6rem; font-size:1.05rem;
+  }
+  .datapad-panel .subtitle{color:#5f8a6b; font-family:'JetBrains Mono',monospace; font-style:normal; font-size:0.85rem;}
+
+  /* Grammar panel */
+  .g-section{margin-bottom:1.5rem; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:1.2rem;}
+  .g-section:last-child{border-bottom:none;}
+  .g-section h3{font-family:'Cormorant Garamond',serif; font-size:1.3rem; margin:0 0 0.5rem; color:var(--ink);}
+  .g-section p, .g-section li{font-size:0.98rem; line-height:1.55; margin:0.3rem 0;}
+  .g-section .ex{font-family:'JetBrains Mono',monospace; font-size:0.82rem; background:rgba(0,0,0,0.05); padding:0.15rem 0.4rem; border-radius:3px;}
+  details.g-toggle{margin-bottom:0.6rem;}
+  details.g-toggle summary{cursor:pointer; font-family:'Cormorant Garamond',serif; font-size:1.15rem; color:var(--amber-dim); padding:0.3rem 0;}
+  details.g-toggle[open] summary{margin-bottom:0.4rem;}
+  .suffix-grid{display:grid; grid-template-columns:1fr; gap:0.5rem;}
+  .suffix-row{display:grid; grid-template-columns:90px 1fr; gap:0.6rem; font-size:0.92rem; align-items:baseline;}
+  .suffix-row b{font-family:'JetBrains Mono',monospace; color:var(--amber-dim);}
+
+  /* Dictionary panel */
+  .dict-search{
+    width:100%; padding:0.7rem 1rem; font-family:'Crimson Pro',serif; font-size:1.05rem;
+    border:1px solid var(--stone); border-radius:3px; background:#fbf9f2; color:var(--ink);
+    margin-bottom:1rem;
+  }
+  .dict-filters{display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1.1rem;}
+  .dict-filters button{
+    font-family:'Cormorant Garamond',serif; font-size:0.85rem; letter-spacing:0.04em;
+    padding:0.3rem 0.7rem; border-radius:20px; border:1px solid var(--stone);
+    background:transparent; color:var(--stone-dark); cursor:pointer; text-transform:uppercase;
+  }
+  .dict-filters button.active{background:var(--amber-dim); color:var(--parchment); border-color:var(--amber-dim);}
+  .dict-list{max-height:48vh; overflow-y:auto; border-top:1px solid rgba(0,0,0,0.1);}
+  .dict-row{
+    display:grid; grid-template-columns:150px 1fr 90px; gap:0.8rem; align-items:baseline;
+    padding:0.55rem 0.2rem; border-bottom:1px solid rgba(0,0,0,0.06);
+  }
+  .dict-row .sol{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--amber-dim); font-size:0.95rem;}
+  .dict-row .eng{font-size:0.98rem;}
+  .dict-row .cat{font-size:0.72rem; color:var(--stone-dark); text-transform:uppercase; letter-spacing:0.05em; text-align:right;}
+  .dict-empty{padding:2rem 0; text-align:center; color:var(--stone-dark); font-style:italic;}
+  .dict-section-heading{
+    font-family:'Cormorant Garamond',serif; font-weight:600; font-size:0.95rem; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--amber-dim); margin:1.1rem 0 0.4rem; padding-top:0.8rem; border-top:1px solid rgba(0,0,0,0.12);
+  }
+  .dict-section-heading:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .dict-count{font-size:0.82rem; color:var(--stone-dark); margin-bottom:0.6rem;}
+
+  /* Quiz panel */
+  .quiz-card{text-align:center;}
+  .quiz-prompt{
+    font-family:'Cormorant Garamond',serif; font-size:1.7rem; margin:1.2rem 0 1.6rem; color:var(--ink);
+  }
+  .quiz-prompt .eng{color:var(--amber-dim); font-style:italic;}
+  .quiz-options{display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1.4rem;}
+  .quiz-opt{
+    font-family:'JetBrains Mono',monospace; font-size:1rem; padding:0.9rem 0.6rem;
+    border:1px solid var(--stone); border-radius:4px; background:#fbf9f2; color:var(--ink);
+    cursor:pointer; transition:background .2s ease, border-color .2s ease;
+  }
+  .quiz-opt:hover{border-color:var(--amber-dim);}
+  .quiz-opt.correct{background:#e2ecd8; border-color:#5c7a3e; color:#3a4a28;}
+  .quiz-opt.wrong{background:#f0dbd8; border-color:#a45c4f; color:#6b352b;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-status{min-height:1.6rem; font-family:'Cormorant Garamond',serif; font-size:1.1rem; margin-bottom:1rem;}
+  .quiz-status.right{color:#3a4a28;}
+  .quiz-status.wrong{color:#6b352b;}
+  .quiz-score{font-size:0.9rem; color:var(--stone-dark); margin-bottom:1rem;}
+  .quiz-next{
+    font-family:'Cormorant Garamond',serif; font-size:1rem; letter-spacing:0.06em; text-transform:uppercase;
+    padding:0.6rem 1.6rem; border:1px solid var(--amber-dim); background:var(--amber-dim); color:var(--parchment);
+    border-radius:3px; cursor:pointer;
+  }
+  .quiz-next:hover{background:#5f4415;}
+  .quiz-next-alt{background:transparent; color:var(--amber-dim);}
+  .quiz-next-alt:hover{background:rgba(122,90,30,0.1);}
+  .cert{border:2px solid var(--amber-dim); outline:1px solid var(--amber-dim); outline-offset:5px; padding:1.8rem 1.4rem 1.6rem; margin:1rem auto 1.6rem; max-width:520px; background:#f4eedc; position:relative;}
+  .cert-head{font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--stone-dark);}
+  .cert-title{font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:700; color:var(--ink); margin:0.5rem 0 0.2rem;}
+  .cert-sub{font-family:'Cormorant Garamond',serif; font-size:1.1rem; color:var(--amber-dim); font-style:italic;}
+  .cert-score{font-family:'Cormorant Garamond',serif; font-size:3.2rem; font-weight:700; color:var(--ink); margin:0.8rem 0 0.2rem;}
+  .cert-score span{font-size:1.6rem; color:var(--stone-dark);}
+  .cert-line{font-size:1.05rem; color:var(--ink);}
+  .cert-seal{position:absolute; right:-14px; bottom:-14px; width:58px; height:58px; border-radius:50%; background:var(--amber-dim); color:var(--parchment); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-weight:700; font-size:1.3rem; box-shadow:0 0 0 3px #f4eedc, 0 0 0 4px var(--amber-dim);}
+  .quiz-type{font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--stone-dark); margin:0.6rem 0 1rem;}
+  .quiz-sol{font-family:'JetBrains Mono',monospace; font-size:1.25rem; color:var(--ink); margin:0.9rem 0 0.4rem; line-height:1.5;}
+  .quiz-gap{color:var(--amber-dim); font-weight:700;}
+  .quiz-eng{font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1.25rem; color:var(--amber-dim); margin-bottom:1.2rem;}
+  .quiz-reply{font-style:normal; font-family:'Crimson Pro',serif; font-size:1.1rem; color:var(--ink); margin-top:0.5rem;}
+  .quiz-options-long{grid-template-columns:1fr;}
+  .quiz-options-long .quiz-opt{text-align:left; padding:0.8rem 1rem; font-size:0.95rem;}
+  .quiz-options-eng .quiz-opt{font-family:'Crimson Pro',serif; font-size:1.1rem;}
+  #quizPassage{text-align:left;}
+  .p-text{margin:0.4rem 0 1rem;}
+  .p-line{display:flex; gap:0.8rem; margin-bottom:0.9rem;}
+  .p-who{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--amber-dim); min-width:1.4rem; padding-top:0.15rem;}
+  .p-sol{font-family:'JetBrains Mono',monospace; font-size:1rem; line-height:2.1; color:var(--ink);}
+  .p-eng{font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1.05rem; color:var(--amber-dim);}
+  .p-gap{font-family:'JetBrains Mono',monospace; font-size:0.95rem; min-width:6.5rem; padding:0.1rem 0.5rem; margin:0 0.15rem; border:none; border-bottom:2px solid var(--amber-dim); background:rgba(122,90,30,0.08); color:var(--ink); cursor:pointer; border-radius:2px 2px 0 0;}
+  .p-gap.filled{background:#fbf9f2;}
+  .p-gap.right{background:#e2ecd8; border-color:#5c7a3e; color:#3a4a28;}
+  .p-gap.wrong{background:#f0dbd8; border-color:#a45c4f; color:#6b352b;}
+  .p-hint{font-size:0.9rem; color:var(--stone-dark); margin-bottom:0.6rem; text-align:center;}
+  .p-bank{display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; margin-bottom:1.2rem;}
+  .p-word{text-transform:lowercase; font-family:'JetBrains Mono',monospace; font-size:0.95rem; padding:0.5rem 0.8rem; border:1px solid var(--stone); border-radius:4px; background:#fbf9f2; color:var(--ink); cursor:pointer;}
+  .p-word.sel{border-color:var(--amber-dim); background:#f1e3c0; box-shadow:0 0 0 2px var(--amber-dim);}
+  .p-word.used{opacity:0.3; cursor:default;}
+  #pCheck{display:block; margin:0 auto 1rem;}
+  .placement-card{display:block; width:100%; max-width:560px; margin:0.6rem auto 1.4rem; border-radius:4px; box-shadow:0 12px 30px rgba(0,0,0,0.35);}
+  .cert-actions{display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap;}
+
+  /* Word builder / datapad */
+  .wb-row{display:flex; gap:0.8rem; margin-bottom:1.1rem; flex-wrap:wrap;}
+  .wb-select{
+    flex:1; min-width:180px; font-family:'JetBrains Mono',monospace; font-size:0.92rem;
+    background:#0a0f0b; color:#8fe3a0; border:1px solid #2c4a33; border-radius:3px; padding:0.6rem 0.7rem;
+  }
+  .wb-output{
+    background:#050a06; border:1px solid #1f3324; border-radius:4px; padding:1.3rem 1.4rem;
+    min-height:100px; font-family:'JetBrains Mono',monospace;
+  }
+  .wb-word{font-size:1.7rem; color:#8fe3a0; text-shadow:0 0 10px rgba(120,220,150,0.5); margin-bottom:0.5rem;}
+  .wb-meaning{font-size:0.92rem; color:#7ea88a; line-height:1.5;}
+  .wb-empty{color:#3d5c46; font-style:italic; font-size:0.9rem;}
+  .wb-note{font-size:0.78rem; color:#4a6b53; margin-top:0.9rem; line-height:1.5;}
+
+  .clause-block{border:1px solid #1f3324; border-radius:4px; padding:0.9rem; margin-bottom:0.7rem;}
+  .clause-label{font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:#5f8a6b; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;}
+  .clause-conj-row{margin-bottom:0.6rem;}
+  .wb-checkbox-row{font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:#7ea88a; display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;}
+  .wb-btn{
+    font-family:'JetBrains Mono',monospace; font-size:0.82rem; padding:0.5rem 0.9rem;
+    background:transparent; border:1px solid #2c4a33; color:#8fe3a0; border-radius:3px; cursor:pointer;
+  }
+  .wb-btn:hover{background:rgba(143,227,160,0.1);}
+  .wb-btn-primary{background:#1a3d24; border-color:#3a6b47;}
+  .wb-btn-danger{color:#c98a6a; border-color:#5a3d2c;}
+  .wb-btn:disabled{opacity:0.35; cursor:not-allowed;}
+  .paragraph-sol{font-size:1.1rem; line-height:1.6; margin-bottom:0.6rem;}
+  .paragraph-eng{font-size:0.88rem; line-height:1.5; color:#7ea88a;}
+  .tense-grid{display:grid; grid-template-columns:1fr 1fr; gap:0.7rem; margin-top:0.8rem;}
+  .tense-box{border:1px solid #1f3324; border-radius:4px; padding:0.8rem;}
+  .tense-box-label{font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:#5f8a6b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem;}
+  @media (max-width:600px){ .tense-grid{grid-template-columns:1fr;} }
+
+  /* Back button */
+  .back-btn{
+    position:fixed; top:1.4rem; left:1.4rem; z-index:60;
+    font-family:'Cormorant Garamond',serif; font-size:0.95rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--parchment-dim); background:rgba(14,15,11,0.55); border:1px solid rgba(232,226,208,0.3);
+    padding:0.5rem 1rem; border-radius:20px; cursor:pointer; opacity:0; pointer-events:none;
+    transition:opacity .4s ease;
+  }
+  .back-btn.show{opacity:1; pointer-events:auto;}
+  .back-btn:hover{background:rgba(201,162,74,0.25); border-color:var(--amber);}
+  body.panel-open .back-btn{opacity:0 !important; pointer-events:none !important;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.25); border-radius:4px;}
+  .datapad-panel ::-webkit-scrollbar-thumb{background:rgba(143,227,160,0.3);}
+
+  @media (max-width:720px){
+    .panel{padding:1.6rem 1.4rem 2rem;}
+    .quiz-options{grid-template-columns:1fr;}
+    .dict-row{grid-template-columns:1fr; gap:0.1rem;}
+    .dict-row .cat{text-align:left;}
+  }
+
+  /* ===== SHORT SCREENS (phones in landscape) ===== */
+  @media (max-height:500px){
+    .overlay{padding:2vh 2vw;}
+    .panel{padding:1rem 1.4rem 1.2rem; max-height:96vh;}
+    .panel h2{font-size:1.45rem; margin:0 0 0.2rem;}
+    .panel .subtitle{display:none;}
+    .g-section h3{font-size:1.1rem;}
+    .quiz-type{margin:0.2rem 0 0.5rem;}
+    .quiz-sol{font-size:1.05rem; margin:0.4rem 0 0.2rem;}
+    .quiz-eng{font-size:1.05rem; margin-bottom:0.7rem;}
+    .quiz-options{gap:0.5rem; margin-bottom:0.8rem;}
+    .quiz-options-long{grid-template-columns:1fr 1fr;}
+    .quiz-opt, .quiz-options-long .quiz-opt{padding:0.5rem 0.7rem; font-size:0.88rem;}
+    .quiz-options-eng .quiz-opt{font-size:0.95rem;}
+    .quiz-status{margin-bottom:0.4rem; min-height:1.2rem; font-size:1rem;}
+    .quiz-score{margin-bottom:0.5rem;}
+    .p-line{margin-bottom:0.4rem;}
+    .p-sol{font-size:0.9rem; line-height:1.9;}
+    .p-eng{font-size:0.95rem;}
+    .p-gap{min-width:5rem; font-size:0.85rem;}
+    .p-word{padding:0.35rem 0.6rem; font-size:0.85rem;}
+    .placement-card{max-height:58vh; width:auto; max-width:100%;}
+    .cert{padding:1rem; margin:0.4rem auto 0.8rem;}
+    .cert-title{font-size:1.5rem;} .cert-score{font-size:2.2rem; margin:0.3rem 0;}
+  }
+
+  /* ===== STANDING FIXES ===== */
+  *{ -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+  #rotate-lock{ position:fixed; inset:0; z-index:1000; background:#0a0a0a; display:none; flex-direction:column; align-items:center; justify-content:center; gap:22px; }
+  #rotate-lock .rl-text{ font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:3px; color:#C9A24A; text-transform:uppercase; text-align:center; padding:0 24px; }
+  #rotate-lock svg{ animation:rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock{ 0%,100%{ transform:rotate(0deg); } 40%,60%{ transform:rotate(-90deg); } }
+  .wa-return{ position:fixed; right:18px; bottom:14px; z-index:60; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1.5px; color:#8c8272; text-decoration:none; outline:none; }
+  .wa-return:hover{ color:#C9A24A; }
+  @media (orientation:portrait){ #rotate-lock{ display:flex; } .wa-return{ display:none; } }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+
+<div class="scene exterior" id="exteriorScene">
+  <div class="vignette"></div>
+  <div class="door-hotspot" id="doorHotspot" aria-label="Enter"></div>
+  <div class="entry-label">Enter the Library</div>
+  <a class="wa-return" href="https://wapublishing.co.uk" target="_top">← Return to WA Publishing</a>
+</div>
+
+<div class="scene interior" id="interiorScene">
+  <div class="vignette"></div>
+
+  <div class="hotspot hs-bookshelf-left" data-panel="grammarPanel">
+    <div class="hs-hint">Grammar</div>
+  </div>
+
+  <div class="hotspot hs-table-left" data-panel="quizPanel">
+    <div class="hs-hint">Test Your Knowledge</div>
+  </div>
+
+  <div class="hotspot hs-datapad" data-panel="builderPanel">
+    <div class="datapad-glow"></div>
+    <div class="datapad-text" id="datapadFlicker">&gt; root.load()_</div>
+    <div class="hs-hint">Word Construction</div>
+  </div>
+
+  <div class="hotspot hs-bookshelf-right" data-panel="dictPanel">
+    <div class="hs-hint">Dictionary</div>
+  </div>
+</div>
+
+<button class="back-btn" id="backBtn">← Leave the library</button>
+
+<!-- GRAMMAR PANEL -->
+<div class="overlay" id="grammarPanel">
+  <div class="panel">
+    <button class="panel-close" data-close>&times;</button>
+    <h2>The Grammar of Solari</h2>
+    <p class="subtitle">A handful of simple rules hold the whole language together.</p>
+
+    <div class="g-section">
+      <h3>Building a sentence</h3>
+      <p>Solari has two kinds of sentence.</p>
+      <p><b>Saying what someone or something is.</b> Start with the person or thing, then <span class="ex">et</span> (is), then what they are. <span class="ex">Shala et talin lumana</span> — he is my father. <span class="ex">Dorn et zovar</span> — this is sacred.</p>
+      <p><b>Saying what someone does.</b> This is where Solari differs most from English. The action word comes first, then the person doing it, then what it is done to. <span class="ex">Iso shala za betala</span> — he has a brother. Word for word, it reads "has he a brother".</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Past, present and future</h3>
+      <p>The action word itself never changes. Instead, a short word goes in front of it to show when it happens.</p>
+      <p><span class="ex">Iso shala za betala</span> — he has a brother. The present needs nothing extra.<br>
+      <span class="ex">Ik iso shala za betala</span> — he had a brother. <span class="ex">ik</span> marks the past.<br>
+      <span class="ex">Un iso shala za betala</span> — he will have a brother. <span class="ex">un</span> marks the future.</p>
+      <p>To show that something is still going on, add <span class="ex">im</span> straight after the time word. <span class="ex">Ik im kreved shalal</span> — they were fighting.</p>
+      <p>Two action words change their meaning with <span class="ex">im</span>. <span class="ex">oltard</span> means "know", but <span class="ex">im oltard</span> means "remember". <span class="ex">spenot</span> means "fear", but <span class="ex">im spenot</span> means "worry".</p>
+      <p>The same time words work with day and night: <span class="ex">ik don</span> yesterday &nbsp;·&nbsp; <span class="ex">un don</span> tomorrow &nbsp;·&nbsp; <span class="ex">ik nod</span> last night &nbsp;·&nbsp; <span class="ex">un nod</span> tomorrow night</p>
+      <p style="font-size:0.85rem; font-style:italic; color:var(--stone-dark);">Word Construction lets you try any action word in every tense.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>The, a and an</h3>
+      <p><span class="ex">la</span> means "the". <span class="ex">za</span> is used where English says "a". <span class="ex">zaz</span> is used where English says "an".</p>
+      <p><span class="ex">za wimvant</span> — a house &nbsp;·&nbsp; <span class="ex">zaz vorima</span> — an enemy &nbsp;·&nbsp; <span class="ex">la regasa</span> — the king</p>
+      <p>Words like bread, water and peace take no article, just as in English. <span class="ex">Ven tal krevos</span> — I want peace.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>More than one, or belonging to someone</h3>
+      <p>Both are shown with a short ending. Which ending to use depends on the last letter of the word.</p>
+      <p><b>More than one.</b> Add <span class="ex">-al</span> if the word ends in a consonant, or <span class="ex">-l</span> if it ends in a vowel.<br>
+      <span class="ex">veton</span> (person) → <span class="ex">vetonal</span> (people) &nbsp;·&nbsp; <span class="ex">lumana</span> (father) → <span class="ex">lumanal</span> (fathers)</p>
+      <p><b>Belonging to someone.</b> Add <span class="ex">-in</span> if the word ends in a consonant, or <span class="ex">-n</span> if it ends in a vowel.<br>
+      <span class="ex">veton</span> → <span class="ex">vetonin</span> (the person's) &nbsp;·&nbsp; <span class="ex">lumana</span> → <span class="ex">lumanan</span> (the father's)</p>
+      <p><b>My, your, his and her.</b> <span class="ex">talin</span> my &nbsp;·&nbsp; <span class="ex">temin</span> your &nbsp;·&nbsp; <span class="ex">shalan</span> his &nbsp;·&nbsp; <span class="ex">shalin</span> her &nbsp;·&nbsp; <span class="ex">talalin</span> our &nbsp;·&nbsp; <span class="ex">temalin</span> your (more than one) &nbsp;·&nbsp; <span class="ex">shalalin</span> their. These go before the word they belong to: <span class="ex">talin lumani</span> — my mother.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Describing words</h3>
+      <p>A describing word goes before the thing it describes, as in English. <span class="ex">za yoldiz motren</span> — a big vehicle. <span class="ex">za yurk vant</span> — a new door.</p>
+      <p><span class="ex">tref</span> (very) and <span class="ex">kelvash</span> (too, as in too much) go straight before the describing word. <span class="ex">La purash et tref yentuz</span> — the water is very cold.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Asking questions</h3>
+      <p>Most question words begin with <span class="ex">san-</span>: <span class="ex">sansak</span> who &nbsp;·&nbsp; <span class="ex">sant</span> what &nbsp;·&nbsp; <span class="ex">sanket</span> why &nbsp;·&nbsp; <span class="ex">sanah</span> when &nbsp;·&nbsp; <span class="ex">sannir</span> where. The one exception is <span class="ex">fesh</span>, which means how.</p>
+      <p><span class="ex">Sannir im splet tem?</span> — Where are you going?</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Giving orders</h3>
+      <p>To tell someone to do something, use the action word on its own, with no time word in front. You can add who it is for, or when, in the usual places.</p>
+      <p><span class="ex">Rulit!</span> — Run! &nbsp;·&nbsp; <span class="ex">Rulit pumar!</span> — Run now! &nbsp;·&nbsp; <span class="ex">Rulit tem!</span> — You, run!<br>
+      <span class="ex">Donel la klis!</span> — Give the key! &nbsp;·&nbsp; <span class="ex">Nopa rulit!</span> — Don't run!</p>
+      <p>Any action word works this way: <span class="ex">Nopa motrened!</span> — Don't drive! &nbsp;·&nbsp; <span class="ex">Nopa zumek!</span> — Don't jump! &nbsp;·&nbsp; <span class="ex">Sheled!</span> — Fish! &nbsp;·&nbsp; <span class="ex">Fre pumar!</span> — Flee now!</p>
+      <p style="font-size:0.85rem; font-style:italic; color:var(--stone-dark);">Word Construction shows the order form of every action word.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Yes, no and not</h3>
+      <p><span class="ex">yah</span> means yes and <span class="ex">nop</span> means no. To say that something is not so, use <span class="ex">nopa</span>. Like the time words, it goes in front of the action word, after <span class="ex">ik</span> or <span class="ex">un</span>.</p>
+      <p><span class="ex">Ik nopa wedak shala</span> — he did not arrive. &nbsp;·&nbsp; <span class="ex">Nopa iso tal nesh</span> — I do not have food.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Joining sentences together</h3>
+      <p><span class="ex">ket</span> and &nbsp;·&nbsp; <span class="ex">shen</span> but &nbsp;·&nbsp; <span class="ex">pa</span> or &nbsp;·&nbsp; <span class="ex">ravon</span> because &nbsp;·&nbsp; <span class="ex">tozeb</span> if &nbsp;·&nbsp; <span class="ex">vezon</span> when &nbsp;·&nbsp; <span class="ex">narune</span> while &nbsp;·&nbsp; <span class="ex">zenom</span> although &nbsp;·&nbsp; <span class="ex">ordesh</span> that, which or who</p>
+      <p>Each half of the sentence keeps its own normal order. <span class="ex">Vezon ik wedak la krevtonal, ik fre la vetonal.</span> — When the soldiers arrived, the people fled.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Saying where, how and with what</h3>
+      <p><span class="ex">gom</span> of &nbsp;·&nbsp; <span class="ex">tash</span> from &nbsp;·&nbsp; <span class="ex">tu</span> to &nbsp;·&nbsp; <span class="ex">rusha</span> in &nbsp;·&nbsp; <span class="ex">runa</span> out &nbsp;·&nbsp; <span class="ex">cul</span> with &nbsp;·&nbsp; <span class="ex">culruna</span> without &nbsp;·&nbsp; <span class="ex">thena</span> on &nbsp;·&nbsp; <span class="ex">timas</span> at &nbsp;·&nbsp; <span class="ex">akrot</span> across &nbsp;·&nbsp; <span class="ex">viras</span> between &nbsp;·&nbsp; <span class="ex">irama</span> through &nbsp;·&nbsp; <span class="ex">faren</span> for &nbsp;·&nbsp; <span class="ex">suren</span> about</p>
+      <p>These come after the rest of the sentence, as in English. <span class="ex">Ik kilt la voshakvetonal rusha la silven.</span> — The rebels hid in the forest.</p>
+      <p>In and out have a small family of their own. <span class="ex">rusha</span> (in) gives <span class="ex">rushak</span> (to enter). <span class="ex">runa</span> (out) gives <span class="ex">runak</span> (to leave a place). This only happens with these two words.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>How many and how much</h3>
+      <p><span class="ex">meros</span> many &nbsp;·&nbsp; <span class="ex">merot</span> few &nbsp;·&nbsp; <span class="ex">zohos</span> all &nbsp;·&nbsp; <span class="ex">zohot</span> none &nbsp;·&nbsp; <span class="ex">zoh</span> each &nbsp;·&nbsp; <span class="ex">solop</span> some &nbsp;·&nbsp; <span class="ex">yana</span> any &nbsp;·&nbsp; <span class="ex">enola</span> enough &nbsp;·&nbsp; <span class="ex">onlay</span> only</p>
+      <p>These go before the thing being counted. <span class="ex">Iso la kranveton meros krevtonal</span> — the general has many soldiers. <span class="ex">Iso tal onlay grenu</span> — I only have bread.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Can, still, already and yet</h3>
+      <p><span class="ex">itlu</span> can &nbsp;·&nbsp; <span class="ex">yulim</span> still &nbsp;·&nbsp; <span class="ex">zumara</span> already &nbsp;·&nbsp; <span class="ex">jas</span> yet</p>
+      <p>Each one is always a separate word. Like <span class="ex">nopa</span>, they go in front of the action word, after <span class="ex">ik</span> or <span class="ex">un</span>.</p>
+      <p><span class="ex">Itlu kreved tal</span> — I can fight.<br>
+      <span class="ex">Yulim im somnam la banal</span> — the children are still sleeping.<br>
+      <span class="ex">Ik zumara wedam shalal</span> — they already left.<br>
+      <span class="ex">Ik nopa jas wedak la regasa</span> — the king has not arrived yet.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>How new words get built</h3>
+      <p>Most Solari words are made by adding a short ending to a simpler word, the way English turns "safe" into "safety". There are fifteen of these endings. One example: <span class="ex">-em</span> names an activity, so <span class="ex">shel</span> (fish) gives <span class="ex">shelem</span> (fishing).</p>
+      <p>Not every word ending in <span class="ex">-el</span>, <span class="ex">-er</span> or <span class="ex">-en</span> was built this way. <span class="ex">faren</span> (for) and <span class="ex">suren</span> (about) are whole words in their own right.</p>
+      <p style="font-size:0.85rem; font-style:italic; color:var(--stone-dark);">Word Construction shows all fifteen endings with real examples.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Joining two words into one</h3>
+      <p>A few words are made by joining the first three letters of two other words. <span class="ex">vrek</span> (tree) and <span class="ex">nesh</span> (food) give <span class="ex">vreknesh</span> (fruit). <span class="ex">teron</span> (ground) and <span class="ex">nesh</span> give <span class="ex">ternesh</span> (vegetable).</p>
+      <p>Each of these was checked and agreed one at a time. It is how some of the language's words were made, not a way to invent new ones.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Sounds that belong to a family</h3>
+      <p>Some openings are kept for one kind of word: <span class="ex">dor-</span> for this and that, <span class="ex">san-</span> for questions, <span class="ex">et-</span> for "to be" and <span class="ex">sel-</span> for how a person feels about themselves.</p>
+      <p>A plain <span class="ex">-a</span> or <span class="ex">-i</span> on the end of a people word shows whether the person is male or female: <span class="ex">betala</span> (brother), <span class="ex">betali</span> (sister). Apart from these, a root word or a describing word never ends in a plain <span class="ex">-a</span> or <span class="ex">-i</span>.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Counting</h3>
+      <p>One to ten: <span class="ex">ono</span>, <span class="ex">tol</span>, <span class="ex">zer</span>, <span class="ex">dis</span>, <span class="ex">velo</span>, <span class="ex">zek</span>, <span class="ex">sev</span>, <span class="ex">yul</span>, <span class="ex">sam</span>, <span class="ex">tir</span>.</p>
+      <p>For eleven to nineteen, put <span class="ex">tir</span> (ten) in front: <span class="ex">tir dis</span> is fourteen. For the tens, join the number onto <span class="ex">tir</span> as one word: <span class="ex">tirtol</span> is twenty, up to <span class="ex">tirsam</span> for ninety. For hundreds, add <span class="ex">ondar</span>: <span class="ex">zer ondar</span> is three hundred. A thousand is <span class="ex">tir ondar</span>.</p>
+      <p>Bigger numbers are said hundreds first, then tens, then units: <span class="ex">ono ondar tirvelo</span> is 150. <span class="ex">zer ondar tirvelo sev</span> is 357. Like other amount words, a number goes before the thing being counted. <span class="ex">Iso talal ono ondar tirvelo krevtonal</span> — we have 150 soldiers.</p>
+    </div>
+
+    <div class="g-section">
+      <h3>Colours</h3>
+      <p>There are three base colours: <span class="ex">kav</span> red &nbsp;·&nbsp; <span class="ex">zul</span> blue &nbsp;·&nbsp; <span class="ex">fiv</span> yellow</p>
+      <p>The colours in between are made by joining two of them: <span class="ex">kavzul</span> purple (red and blue) &nbsp;·&nbsp; <span class="ex">kavfiv</span> orange (red and yellow) &nbsp;·&nbsp; <span class="ex">fivzul</span> green (yellow and blue)</p>
+      <p>The rest are words of their own: <span class="ex">novin</span> white &nbsp;·&nbsp; <span class="ex">noduro</span> black &nbsp;·&nbsp; <span class="ex">nodero</span> grey &nbsp;·&nbsp; <span class="ex">bowen</span> brown &nbsp;·&nbsp; <span class="ex">poy</span> pink. <span class="ex">nodesh</span> means dark and <span class="ex">donesh</span> means light.</p>
+      <p>Colours work like any other describing word. <span class="ex">La aveth et zul</span> — the sky is blue. <span class="ex">za kav vant</span> — a red door.</p>
+    </div>
+
+    <details class="g-toggle">
+      <summary>A few exceptions worth knowing</summary>
+      <p><span class="ex">sinat</span> (stop) and <span class="ex">chalat</span> (follow) look as though they were built with an ending, but they weren't. They are whole words of their own.</p>
+      <p><span class="ex">burmar</span> (bed) and <span class="ex">shodar</span> (bullet) end in <span class="ex">-ar</span>, but they are whole words too. They were not built with the <span class="ex">-ar</span> ending.</p>
+      <p>The four directions join to make the ones in between: <span class="ex">lonor</span> (north), <span class="ex">lonev</span> (south), <span class="ex">lonir</span> (east), <span class="ex">lonux</span> (west). The shared <span class="ex">lon-</span> is dropped when they join, which happens with no other words.</p>
+      <p><span class="ex">lonor</span> + <span class="ex">lonir</span> → <span class="ex">norir</span> (northeast)<br>
+      <span class="ex">lonor</span> + <span class="ex">lonux</span> → <span class="ex">norux</span> (northwest)<br>
+      <span class="ex">lonev</span> + <span class="ex">lonir</span> → <span class="ex">nevir</span> (southeast)<br>
+      <span class="ex">lonev</span> + <span class="ex">lonux</span> → <span class="ex">nevux</span> (southwest)</p>
+    </details>
+  </div>
+</div>
+
+<!-- DICTIONARY PANEL -->
+<div class="overlay" id="dictPanel">
+  <div class="panel">
+    <button class="panel-close" data-close>&times;</button>
+    <h2>The Solari Dictionary</h2>
+    <p class="subtitle">Every word set down and catalogued before the room was left to the vines.</p>
+    <div class="dict-filters" id="dictFilters"></div>
+    <div class="dict-count" id="dictCount"></div>
+    <div class="dict-list" id="dictList"></div>
+  </div>
+</div>
+
+<!-- QUIZ PANEL -->
+<div class="overlay" id="quizPanel">
+  <div class="panel">
+    <button class="panel-close" data-close>&times;</button>
+    <h2>Test Your Knowledge</h2>
+    <p class="subtitle">A scattering of loose reference sheets — someone was studying here.</p>
+    <div class="quiz-card">
+      <div id="quizPlay">
+      <div class="quiz-type" id="quizType"></div>
+      <div class="quiz-sol" id="quizSol"></div>
+      <div class="quiz-eng" id="quizEng"></div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div id="quizPassage" style="display:none;"></div>
+      <div class="quiz-status" id="quizStatus">&nbsp;</div>
+      <div class="quiz-score" id="quizScore">&nbsp;</div>
+      <button class="quiz-next" id="quizNext">Next question</button>
+      </div>
+      <div id="quizCert" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WORD BUILDER PANEL -->
+<div class="overlay" id="builderPanel">
+  <div class="panel datapad-panel">
+    <button class="panel-close" data-close>&times;</button>
+    <h2>&gt; suffix_explorer.exe</h2>
+    <p class="subtitle">cracked screen — still holds a charge</p>
+
+    <div class="clause-label">pick a suffix, see what it really does</div>
+    <div class="wb-row">
+      <select class="wb-select" id="suffixSelect"></select>
+      <select class="wb-select" id="suffixWordSelect"></select>
+    </div>
+    <div class="wb-output" id="suffixOutput">
+      <div class="wb-empty">// choose a suffix, then a word, to see the derivation</div>
+    </div>
+
+    <div class="clause-label" style="margin-top:1.6rem;">watch a verb move through time</div>
+    <div class="wb-row">
+      <select class="wb-select" id="tensePronounSelect"></select>
+      <select class="wb-select" id="tenseVerbSelect"></select>
+      <select class="wb-select" id="tenseObjectSelect"></select>
+      <select class="wb-select" id="tenseNotSelect"><option value="0">does it</option><option value="1">does not (nopa)</option></select>
+    </div>
+    <div id="tenseOutput"></div>
+
+    <p class="wb-note">Every word and derivation shown here is a real, already-confirmed part of Solari — nothing here is invented on the fly.</p>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATA — Solari dictionary (representative full-language set)
+   ========================================================= */
+const VOCAB = [
+  // People & pronouns
+  ["ban","child","people"],["ben","adult","people"],["betal","sibling","people"],["luman","parent","people"],
+  ["hant","spouse","people"],["vorim","enemy","people"],["belas","friend","people"],["tergram","stranger","people"],
+  ["getash","group","people"],["veton","person","people"],["yurk","young","people"],["olar","old","people"],
+  ["dorn","this","people"],["dorl","that","people"],["sansak","who","people"],["sant","what","people"],
+  ["sanket","why","people"],["sanah","when (question)","people"],["fesh","how","people"],
+  ["bana","boy","people"],["bani","girl","people"],["bena","man","people"],["beni","woman","people"],
+  ["betala","brother","people"],["betali","sister","people"],["lumana","father","people"],["lumani","mother","people"],
+  ["hanta","husband","people"],["hanti","wife","people"],["lumanbana","son","people"],["lumanbani","daughter","people"],
+  ["vorima","male enemy","people"],["vorimi","female enemy","people"],["belasa","male friend","people"],["belasi","female friend","people"],
+  ["olarlumana","grandfather","people"],["olarlumani","grandmother","people"],["lumanbetala","uncle","people"],["lumanbetali","aunt","people"],
+  ["tal","I","people"],["tem","you","people"],["shala","he","people"],["shali","she","people"],
+  ["talal","we","people"],["temal","you (plural)","people"],["shalal","they","people"],
+  ["talin","my","people"],["temin","your","people"],["shalan","his","people"],["shalin","her","people"],
+  ["lumangetash","family","people"],
+
+  // Core-state verbs
+  ["et","to be","verbs"],["iso","to have","verbs"],["oltard","to know","verbs"],["ven","to want","verbs"],["loc","to see / look","verbs"],
+  // Movement
+  ["splet","to go","verbs"],["licar","to come","verbs"],["rulit","to run","verbs"],["shomat","to walk","verbs"],
+  ["sinat","to stop","verbs"],["chalat","to follow","verbs"],["cholo","to chase","verbs"],["fre","to flee","verbs"],
+  ["freduv","to escape","verbs"],["wedak","to arrive","verbs"],["wedam","to leave","verbs"],["culos","to climb","verbs"],
+  ["culot","to fall","verbs"],["zumek","to jump","verbs"],["dush","to duck","verbs"],["kilt","to hide","verbs"],
+  ["rushak","to enter","verbs"],["runak","to exit","verbs"],["tulas","to turn","verbs"],["katulas","to return","verbs"],
+  ["posel","to send","verbs"],["somnak","to wake","verbs"],["somnam","to sleep","verbs"],["motrened","to drive","verbs"],
+  // Dialogue
+  ["vol","to say","verbs"],["volat","to tell","verbs"],["volan","to speak","verbs"],["kesat","to ask","verbs"],
+  ["kesan","to answer","verbs"],["krosh","to shout","verbs"],["tivsh","to whisper","verbs"],["kolat","to call","verbs"],
+  ["fen","to lie / deceive","verbs"],["senod","to promise","verbs"],["seno","a promise","verbs"],
+  // Directed extensions
+  ["oltardat","to know (a fact)","verbs"],["venat","to want (specifically)","verbs"],["locat","to look at","verbs"],
+  ["kiltat","to hide (something)","verbs"],["wedamat","to abandon","verbs"],["tulasat","to turn toward","verbs"],["katulasat","to return (something)","verbs"],
+  // Give/take
+  ["donel","to give","verbs"],["donan","to receive","verbs"],["rek","to take","verbs"],["rekat","to steal","verbs"],
+  ["grasol","to hold","verbs"],["grasil","to carry","verbs"],["vosh","to drop","verbs"],["voshat","to throw","verbs"],
+  ["misen","to lose","verbs"],["misat","to find","verbs"],
+  // Action/creation
+  ["kelo","to do","verbs"],["dovel","to make","verbs"],["kerav","to cut","verbs"],["flarav","to burn","verbs"],
+  ["tavro","to cook","verbs"],["makos","to build","verbs"],["makot","to break","verbs"],["vantak","to open","verbs"],
+  ["vantam","to close","verbs"],["letiv","to write","verbs"],["locan","to read","verbs"],["purashat","to wash","verbs"],
+  ["purashan","to clean","verbs"],["purashed","to drink","verbs"],
+  // Perception/cognition
+  ["mentu","to think","verbs"],["mentan","to understand","verbs"],["mentat","to believe","verbs"],["mentak","to decide","verbs"],
+  ["mentam","to choose","verbs"],["kanat","to teach","verbs"],["kanan","to learn","verbs"],["denu","to hear","verbs"],
+  ["vesar","to feel","verbs"],["nazued","to smell","verbs"],["gustat","to taste (a thing)","verbs"],["gustan","to taste / savour","verbs"],
+  // Emotion
+  ["kar","to care","verbs"],["karos","to love","verbs"],["karot","to hate","verbs"],["karat","to thank","verbs"],
+  ["karan","to forgive","verbs"],["fidos","to trust","verbs"],["fidot","to doubt","verbs"],["spenos","to hope","verbs"],
+  ["spenot","to fear","verbs"],["spenat","to miss (someone)","verbs"],["torvos","to rejoice","verbs"],["torvot","to grieve","verbs"],
+  ["torvat","to pity","verbs"],["bren","to anger","verbs"],["corvash","to regret","verbs"],
+  // Combat/action
+  ["kreved","to fight","verbs"],["krevat","to attack","verbs"],["krevan","to defend","verbs"],["dermuked","to wound","verbs"],
+  ["vivav","to kill","verbs"],["vivoted","to die","verbs"],["vivosed","to survive","verbs"],["fenat","to betray","verbs"],
+  ["vosham","to surrender","verbs"],["voshak","to rise up / take arms","verbs"],["tonked","to protect","verbs"],
+  ["neshat","to eat (a food)","verbs"],["neshan","to eat / dine","verbs"],["neshed","to feed","verbs"],["kesh","to sit","verbs"],
+  ["kamed","to lodge someone","verbs"],["grimud","to dirty","verbs"],["regased","to rule / reign","verbs"],
+
+  // Body parts
+  ["locish","eye","body"],["denish","ear","body"],["volish","mouth","body"],["karish","heart","body"],
+  ["derm","skin","body"],["dermuk","wound","body"],["let","hand","body"],["pel","foot","body"],
+  ["kran","head","body"],["mir","face","body"],["nazu","nose","body"],["tigen","finger","body"],
+  ["vakor","arm","body"],["pekun","chest","body"],["rigen","back","body"],["tibar","leg","body"],
+  ["krinu","hair","body"],["molik","teeth","body"],["gorel","throat","body"],["kolez","neck","body"],["amrel","shoulder","body"],
+  ["kraniv","to nod","body"],["vakoriv","to hug","body"],["tigeniv","to point","body"],["volishiv","to kiss","body"],
+  ["peliv","to kick","body"],["vakored","to arm / equip","body"],
+
+  // Adjectives — core
+  ["gamos","good","adjectives"],["gamot","bad","adjectives"],["volos","true","adjectives"],["volot","false","adjectives"],
+  ["vivos","alive","adjectives"],["vivot","dead","adjectives"],["makiz","whole","adjectives"],["makuz","broken","adjectives"],
+  ["kiltesh","hidden","adjectives"],["kiltatesh","secret","adjectives"],["fidesh","loyal","adjectives"],
+  ["tonk","safe","adjectives"],["spenotesh","dangerous","adjectives"],["zovar","sacred","adjectives"],
+  ["zethos","honest","adjectives"],["zethot","corrupt","adjectives"],
+  // Size/scale
+  ["yoldiz","big","adjectives"],["yolduz","small","adjectives"],["drebiz","heavy","adjectives"],["drebuz","light (weight)","adjectives"],
+  ["spaliz","wide","adjectives"],["spaluz","narrow","adjectives"],["vigoriz","strong","adjectives"],["vigoruz","weak","adjectives"],
+  ["rendiz","fast","adjectives"],["renduz","slow","adjectives"],["zumiz","tall","adjectives"],["zumuz","short","adjectives"],
+  ["firmiz","hard","adjectives"],["firmuz","soft","adjectives"],["yentiz","hot","adjectives"],["yentuz","cold","adjectives"],
+  // Emotional-state
+  ["brenesh","angry","adjectives"],["torvotesh","sad","adjectives"],["seludiz","proud","adjectives"],["seluduz","ashamed","adjectives"],
+  ["milos","happy","adjectives"],["milot","unhappy","adjectives"],["stenos","calm","adjectives"],["stenot","agitated","adjectives"],
+  ["vanos","eager","adjectives"],["vanot","desperate","adjectives"],["somnesh","asleep","adjectives"],["keshesh","seated","adjectives"],
+  ["gustesh","tasty","adjectives"],["grimu","dirty","adjectives"],
+  // Colours
+  ["kav","red","colours"],["zul","blue","colours"],["fiv","yellow","colours"],["kavzul","purple","colours"],
+  ["kavfiv","orange","colours"],["fivzul","green","colours"],["novin","white","colours"],["bowen","brown","colours"],
+  ["poy","pink","colours"],["noduro","black","colours"],["nodero","grey","colours"],["nodesh","dark","colours"],["donesh","light","colours"],
+
+  // Adverbs
+  ["rendizar","quickly","adverbs"],["renduzar","slowly","adverbs"],["kareshar","carefully","adverbs"],["kroshar","loudly","adverbs"],
+  ["tivshar","quietly","adverbs"],["vigorizar","strongly","adverbs"],["vigoruzar","weakly","adverbs"],["getashar","together","adverbs"],
+  ["vune","again","adverbs"],["ketron","always","adverbs"],["fanet","never","adverbs"],["molen","often","adverbs"],
+  ["tref","very","adverbs"],["solim","alone","adverbs"],["firmizar","firmly","adverbs"],["firmuzar","softly","adverbs"],
+  ["yentizar","hotly","adverbs"],["yentuzar","coldly","adverbs"],["kelvash","too / excessively","adverbs"],
+
+  // Quantity
+  ["meros","many","quantity"],["merot","few","quantity"],["zohos","all","quantity"], ["zoh", "each / everything together", "quantity"],["zohot","none","quantity"],
+  ["mered","to count","quantity"],["merotar","rarely","quantity"],["merosar","abundantly","quantity"],
+  ["zohosar","entirely","quantity"],["zohotar","not at all","quantity"],
+
+  // Place & time
+  ["don","today / day","time"],["nod","tonight / night","time"],["pumar","now","time"],["pumek","soon","time"],
+  ["pumak","early","time"],["pumam","late","time"],["donak","morning","time"],["donam","evening","time"],
+  ["vekak","before","time"],["vekam","after","time"],["anuv","year","time"],["seklu","season","time"],
+  ["zum","above","place"],["dov","below","place"],["dovesh","low","place"],["doved","to lower","place"],
+  ["rushakesh","inside","place"],["runakesh","outside","place"],["distuz","near","place"],["distiz","far","place"],
+  ["nirel","here","place"],["nirim","there","place"],["reston","home","place"],["trelo","road","place"],
+  ["maren","border","place"],["flenu","river","place"],["yugen","mountain","place"],["silven","forest","place"],
+  ["metren","city","place"],["dovspal","ravine","place"],["lonor","north","place"],["lonev","south","place"],
+  ["lonir","east","place"],["lonux","west","place"],["norir","northeast","place"],["norux","northwest","place"],
+  ["nevir","southeast","place"],["nevux","southwest","place"],["motren","vehicle","place"],["kam","room","place"],
+  ["grasolkam","cell / prison","place"],
+
+  // Nature
+  ["flar","fire","nature"],["purash","water","nature"],["teron","earth / ground","nature"],["aveth","sky","nature"],
+  ["flarzum","sun","nature"],["nodflar","moon","nature"],["avethflar","star","nature"],["vrek","tree","nature"],
+  ["korath","stone","nature"],["vidru","blood","nature"],["puraveth","rain","nature"],["purashculot","waterfall","nature"],
+  ["slen","snow","nature"],["walt","wind","nature"],["ferok","metal","nature"],["zeval","animal","nature"],
+  ["gust","taste","nature"],["yent","temperature","nature"],
+
+  // Abstract
+  ["volosum","truth","abstract"],["viv","life","abstract"],["vigor","power","abstract"],["vivotum","death","abstract"],
+  ["spenotum","fear (noun)","abstract"],["spenosum","hope (noun)","abstract"],["gazeth","honour","abstract"],
+  ["senit","name","abstract"],["lex","word","abstract"],["krevot","war","abstract"],["krevos","peace","abstract"],
+  ["trivonos","victory","abstract"],["trivonot","defeat","abstract"],["voshot","rebellion","abstract"],
+
+  // Royalty/leadership
+  ["regas","royalty / rule","royalty"],["regasa","king","royalty"],["regasi","queen","royalty"],
+  ["regasveton","leader","royalty"],["regasesh","royal","royalty"],["kranveton","general","royalty"],
+  ["konsel","chancellor / councillor","royalty"],["fenveton","traitor","royalty"],["voshakveton","insurgent / rebel","royalty"],
+  ["kranregas","crown","royalty"],["regaskesh","throne","royalty"],
+
+  // Objects
+  ["vant","door","objects"],["wim","wall","objects"],["wimvant","house","objects"],["lexmer","book","objects"],
+  ["letlex","letter","objects"],["klis","key","objects"],["vakorkrev","weapon","objects"],["vakrist","gun","objects"],
+
+  // Food
+  ["nesh","food","food"],["vreknesh","fruit","food"],["grenu","bread","food"],["yog","flesh","food"],
+  ["yognesh","meat","food"],["shel","fish","food"],["brosk","soup","food"],
+
+  // Conjunctions
+  ["ket","and","conjunctions"],["shen","but","conjunctions"],["ravon","because","conjunctions"],["tozeb","if","conjunctions"],
+  ["narune","while","conjunctions"],["zenom","although","conjunctions"],["vezon","when (conjunction)","conjunctions"],
+  ["ordesh","that / which / who","conjunctions"],["gom","of","conjunctions"],["tash","from","conjunctions"],["tu","to","conjunctions"],
+
+  // Numbers
+  ["ono","one","numbers","base"],["tol","two","numbers","base"],["zer","three","numbers","base"],["dis","four","numbers","base"],
+  ["velo","five","numbers","base"],["zek","six","numbers","base"],["sev","seven","numbers","base"],["yul","eight","numbers","base"],
+  ["sam","nine","numbers","base"],["tir","ten","numbers","base"],["tirtol","twenty","numbers","base"],["tirzer","thirty","numbers","base"],
+  ["tirdis","forty","numbers","base"],["tirvelo","fifty","numbers","base"],["tirzek","sixty","numbers","base"],["tirsev","seventy","numbers","base"],
+  ["tiryul","eighty","numbers","base"],["tirsam","ninety","numbers","base"],
+  ["ono ondar","one hundred","numbers","base"],["tol ondar","two hundred","numbers","base"],["zer ondar","three hundred","numbers","base"],
+  ["dis ondar","four hundred","numbers","base"],["velo ondar","five hundred","numbers","base"],["zek ondar","six hundred","numbers","base"],
+  ["sev ondar","seven hundred","numbers","base"],["yul ondar","eight hundred","numbers","base"],["sam ondar","nine hundred","numbers","base"],["tir ondar","one thousand","numbers","base"],
+  ["tir dis","fourteen (example)","numbers","combined"],["tirzer yul","thirty-eight (example)","numbers","combined"],
+  ["tirsev zek","seventy-six (example)","numbers","combined"],["ono ondar tirtol sam","one hundred and twenty-nine (example)","numbers","combined"],
+  ["zer ondar tirvelo sev","three hundred and fifty-seven (example)","numbers","combined"],
+  // Added from the Master Reference, 21 Nov 2026 (people)
+  ["belasal", "male friends (plural)", "people"],["betalal", "brothers / male siblings (plural)", "people"],["betalil", "sisters / female siblings (plural)", "people"],["dervet", "patient", "people"],
+  ["frevet", "escapee", "people"],["lumanal", "fathers (plural)", "people"],["lumanil", "mothers (plural)", "people"],["shal", "he / she pronoun root", "people"],
+  ["shalalin", "their", "people"],["talalin", "our", "people"],["temalin", "your (plural)", "people"],["tergrama", "male stranger", "people"],
+  ["tergrami", "female stranger", "people"],["vetonal", "people (plural)", "people"],["vorimal", "male enemies (plural)", "people"],["sannir", "where", "people"],
+  // Added from the Master Reference, 21 Nov 2026 (verbs)
+  ["leted", "to hand over / give by hand", "verbs"],["oltardot", "to forget", "verbs"],["sheled", "to fish", "verbs"],["somn", "rest-state root", "verbs"],
+  ["vived", "to live", "verbs"],
+  // Added from the Master Reference, 21 Nov 2026 (activities)
+  ["frem", "fleeing", "activities"],["rulitem", "running", "activities"],["shelem", "fishing", "activities"],["tavrom", "cooking", "activities"],
+  ["zumekem", "jumping", "activities"],
+  // Added from the Master Reference, 21 Nov 2026 (adjectives)
+  ["jalashiz", "hungry", "adjectives"],["jalashuz", "sated / no longer hungry", "adjectives"],
+  // Added from the Master Reference, 21 Nov 2026 (adverbs)
+  ["dovar", "downward", "adverbs"],
+  // Added from the Master Reference, 21 Nov 2026 (quantity)
+  ["mer", "quantity root", "quantity"],
+  // Added from the Master Reference, 21 Nov 2026 (place)
+  ["dist", "distance root", "place"],["lonas", "direction root", "place"],
+  // Added from the Master Reference, 21 Nov 2026 (time)
+  ["pum", "moment root", "time"],["vek", "sequence root", "time"],
+  // Added from the Master Reference, 21 Nov 2026 (nature)
+  ["firmed", "to harden", "nature"],["firmizum", "hardness", "nature"],["firmuzum", "softness", "nature"],["flared", "to ignite", "nature"],
+  ["grimum", "dirt (noun)", "nature"],["puraved", "to rain", "nature"],["slened", "to snow", "nature"],["vidrued", "to bleed", "nature"],
+  ["vreked", "to grow / plant", "nature"],["vrekiz", "thriving", "nature"],["vrekuz", "withered", "nature"],["walted", "to blow (wind)", "nature"],
+  ["yented", "to change temperature / heat", "nature"],["yentizum", "heat", "nature"],["yentuzum", "coldness", "nature"],
+  // Added from the Master Reference, 21 Nov 2026 (abstract)
+  ["dreb", "weight root", "abstract"],["fideshum", "loyalty", "abstract"],["firm", "rigidity root", "abstract"],["gam", "worth / value root", "abstract"],
+  ["jalash", "hunger", "abstract"],["krev", "conflict / strife root", "abstract"],["mil", "contentment root", "abstract"],["rendu", "speed root", "abstract"],
+  ["seludos", "pride", "abstract"],["seludot", "shame", "abstract"],["spal", "width root", "abstract"],["sten", "stillness root", "abstract"],
+  ["tonkum", "safety", "abstract"],["trivon", "outcome-of-conflict root", "abstract"],["van", "urgency root", "abstract"],["yold", "magnitude root", "abstract"],
+  ["zeth", "moral / social integrity root", "abstract"],
+  // Added from the Master Reference, 21 Nov 2026 (royalty)
+  ["grasolveton", "captive / prisoner", "royalty"],["konselal", "councillors (plural)", "royalty"],["krevton", "soldier", "royalty"],
+  // Added from the Master Reference, 21 Nov 2026 (objects)
+  ["burmar", "bed", "objects"],["conto", "knife", "objects"],["shodar", "bullet", "objects"],["shodaral", "bullets / ammunition", "objects"],
+  ["hidash", "blanket", "objects"],["tonder", "armour / protective covering", "objects"],["vreker", "wood / timber", "objects"],["wimton", "shelter / safehouse", "objects"],
+  // Added from the Master Reference, 21 Nov 2026 (food)
+  ["kasa", "cheese", "food"],["purnesh", "seafood", "food"],["rota", "rice", "food"],["ternesh", "vegetable (ground food)", "food"],
+  ["yogpur", "stew (meat + water)", "food"],
+  // Added from the Master Reference, 21 Nov 2026 (conjunctions)
+  ["pa", "or", "conjunctions"],
+  // Added from the Master Reference, 21 Nov 2026 (grammar)
+  ["ik", "past tense particle", "grammar"],["im", "ongoing / continuous aspect particle", "grammar"],["un", "future tense particle", "grammar"],["enola", "enough", "grammar"],
+  ["itlu", "can", "grammar"],["jas", "yet", "grammar"],["la", "the", "grammar"],["nop", "no", "grammar"],
+  ["nopa", "not", "grammar"],["onlay", "only", "grammar"],["solop", "some", "grammar"],["yah", "yes", "grammar"],
+  ["yana", "any", "grammar"],["yulim", "still", "grammar"],["za", "a", "grammar"],["zaz", "an", "grammar"],
+  ["zumara", "already", "grammar"],["akrot", "across", "grammar"],["cul", "with", "grammar"],["culruna", "without", "grammar"],
+  ["faren", "for", "grammar"],["irama", "through", "grammar"],["runa", "out", "grammar"],["rusha", "in", "grammar"],
+  ["suren", "about", "grammar"],["thena", "on", "grammar"],["timas", "at", "grammar"],["viras", "between", "grammar"],
+  // Phrases made from existing words
+  ["ik don","yesterday","phrases"],["un don","tomorrow","phrases"],["ik nod","last night","phrases"],["un nod","tomorrow night","phrases"],["yoldiz dovspal","canyon (big ravine)","phrases"],["yoldiz motren","jeep (big vehicle)","phrases"],["rulit motren","motorbike (fast vehicle)","phrases"],["yoldiz kam","hall / large room","phrases"],["yoldiz kranveton","commander (higher rank than general)","phrases"],["yurk vant","new door","phrases"],["im oltard","to remember","phrases"],["burmar kam","bedroom","phrases"],["im spenot","to worry","phrases"]
+];
+
+const CATS = [...new Set(VOCAB.map(v=>v[2]))];
+
+
+/* =========================================================
+   Scene transitions
+   ========================================================= */
+const exteriorScene = document.getElementById('exteriorScene');
+const interiorScene = document.getElementById('interiorScene');
+const backBtn = document.getElementById('backBtn');
+
+document.getElementById('doorHotspot').addEventListener('click', ()=>{
+  exteriorScene.classList.add('hidden');
+  interiorScene.classList.add('active');
+  backBtn.classList.add('show');
+});
+backBtn.addEventListener('click', ()=>{
+  exteriorScene.classList.remove('hidden');
+  interiorScene.classList.remove('active');
+  backBtn.classList.remove('show');
+});
+
+/* Panel open/close */
+document.querySelectorAll('.hotspot[data-panel]').forEach(hs=>{
+  hs.addEventListener('click', ()=>{
+    document.getElementById(hs.dataset.panel).classList.add('active');
+    document.body.classList.add('panel-open');
+  });
+});
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target===ov){ ov.classList.remove('active'); document.body.classList.remove('panel-open'); } });
+});
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ btn.closest('.overlay').classList.remove('active'); document.body.classList.remove('panel-open'); });
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.overlay.active').forEach(o=>o.classList.remove('active'));
+    document.body.classList.remove('panel-open');
+  }
+});
+
+/* =========================================================
+   Dictionary
+   ========================================================= */
+const dictList = document.getElementById('dictList');
+const dictFilters = document.getElementById('dictFilters');
+const dictCount = document.getElementById('dictCount');
+let activeCat = 'all';
+
+function renderCatFilters(){
+  let html = `<button data-cat="all" class="active">All</button>`;
+  CATS.forEach(c=>{ html += `<button data-cat="${c}">${c[0].toUpperCase()+c.slice(1)}</button>`; });
+  dictFilters.innerHTML = html;
+  dictFilters.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      dictFilters.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      activeCat = b.dataset.cat;
+      renderDict();
+    });
+  });
+}
+
+function renderDict(){
+  const filtered = activeCat==='all' ? VOCAB : VOCAB.filter(([sol,eng,cat])=> cat===activeCat);
+  dictCount.textContent = `${filtered.length} entr${filtered.length===1?'y':'ies'}`;
+  if(filtered.length===0){
+    dictList.innerHTML = `<div class="dict-empty">No word found in the record.</div>`;
+    return;
+  }
+  const sectionLabels = {base:"Individual Numbers", combined:"Combined Numbers"};
+  let html = '';
+  let lastSection = null;
+  filtered.forEach(([sol,eng,cat,section])=>{
+    if(section && section !== lastSection){
+      html += `<div class="dict-section-heading">${sectionLabels[section] || section}</div>`;
+      lastSection = section;
+    }
+    html += `<div class="dict-row"><span class="sol">${sol}</span><span class="eng">${eng}</span><span class="cat">${cat}</span></div>`;
+  });
+  dictList.innerHTML = html;
+}
+renderCatFilters();
+renderDict();
+
+const PLACEMENT_CARDS = ["image-03.webp", "image-04.webp", "image-05.webp", "image-06.webp", "image-07.webp"];
+const QUIZ_BANK = {"r1": [{"t": "gap", "q": "Ik wedak la krevtonal timas la ___.", "e": "The soldiers arrived at the border.", "a": "maren", "d": ["flenu", "yugen", "metren"]}, {"t": "gap", "q": "Shala et talin ___.", "e": "He is my father.", "a": "lumana", "d": ["lumani", "betala", "belasa"]}, {"t": "gap", "q": "La purash et ___.", "e": "The water is cold.", "a": "yentuz", "d": ["yentiz", "yoldiz", "rendiz"]}, {"t": "gap", "q": "___ shali la fenveton.", "e": "She fears the traitor.", "a": "Spenot", "d": ["Karos", "Fidos", "Kesat"]}, {"t": "gap", "q": "Ik loc shali ___ zeval rusha la silven.", "e": "She saw an animal in the forest.", "a": "zaz", "d": ["za", "la", "et"]}, {"t": "gap", "q": "Un makos talal za ___ wimvant.", "e": "We will build a new house.", "a": "yurk", "d": ["olar", "makuz", "drebiz"]}, {"t": "gap", "q": "Iso la kranveton meros ___.", "e": "The general has many soldiers.", "a": "krevtonal", "d": ["krevton", "krevtonin", "vetonin"]}, {"t": "gap", "q": "Ik ___ la voshakvetonal rusha la silven.", "e": "The rebels hid in the forest.", "a": "kilt", "d": ["kiltat", "kesh", "vivoted"]}, {"t": "gap", "q": "Ik ___ wedak la regasa.", "e": "The king did not arrive.", "a": "nopa", "d": ["nop", "yah", "im"]}, {"t": "gap", "q": "Dorn ___ zovar.", "e": "This is sacred.", "a": "et", "d": ["la", "tu", "im"]}, {"t": "gap", "q": "La aveth et ___.", "e": "The sky is blue.", "a": "zul", "d": ["kav", "fiv", "fivzul"]}, {"t": "gap", "q": "Iso shali ___ lumanbanal.", "e": "She has two sons.", "a": "tol", "d": ["ono", "zer", "tir"]}, {"t": "gap", "q": "Iso la krevtonal ___ ket shodaral.", "e": "The soldiers have guns and bullets.", "a": "vakristal", "d": ["vakrist", "vakristin", "kranregas"]}, {"t": "gap", "q": "Karos shala ___.", "e": "He loves fishing.", "a": "shelem", "d": ["sheled", "shel", "rulitem"]}, {"t": "gap", "q": "Ik rekat la ___ la ___.", "e": "The prisoner stole the key.", "a": "grasolveton … klis", "d": ["grasolkam … klis", "grasolveton … letlex", "kranveton … klis"]}, {"t": "gap", "q": "___ culos shalal la vrek.", "e": "They were climbing the tree.", "a": "Ik im", "d": ["Un im", "Im ik", "Ik un"]}, {"t": "gap", "q": "Iso talal ___ krevtonal.", "e": "We have 150 soldiers.", "a": "ono ondar tirvelo", "d": ["tirvelo ono ondar", "velo ondar ono", "ono ondar tirzer"]}, {"t": "gap", "q": "Kesh la regasa thena la ___.", "e": "The king sits on the throne.", "a": "regaskesh", "d": ["kranregas", "burmar", "regasveton"]}, {"t": "gap", "q": "Ik locat la voshakvetonal la kranveton ___.", "e": "The rebels looked at the general carefully.", "a": "kareshar", "d": ["kroshar", "rendizar", "tivshar"]}, {"t": "gap", "q": "La walt et tref ___.", "e": "The wind is very strong.", "a": "vigoriz", "d": ["vigoruz", "yolduz", "gustesh"]}], "r2": [{"t": "finish", "q": "Ik wedak la krevtonal", "e": "The soldiers arrived at the river.", "a": "timas la flenu.", "d": ["tash la flenu.", "timas la yugen.", "timas la flenual."]}, {"t": "finish", "q": "Ik grasil talin betala", "e": "My brother carried the heavy weapons to the border.", "a": "la drebiz vakorkreval tu la maren.", "d": ["la drebuz vakorkreval tu la maren.", "la drebiz vakorkrev tu la maren.", "la vakorkreval drebiz tu la maren."]}, {"t": "finish", "q": "Ik zumara wedam la krevtonal", "e": "The soldiers already left the city in the morning.", "a": "la metren rusha la donak.", "d": ["la metren rusha la donam.", "la wimvant rusha la donak.", "la metrenal rusha la donak."]}, {"t": "finish", "q": "Un neshed talal", "e": "We will feed the prisoners tonight.", "a": "la grasolvetonal nod.", "d": ["la grasolveton nod.", "la grasolvetonal don.", "la krevtonal nod."]}, {"t": "finish", "q": "Ik kesat la regasi", "e": "The queen asked the general about the war.", "a": "la kranveton suren la krevot.", "d": ["la kranveton suren la krevos.", "la krevtonal suren la krevot.", "la kranveton suren la vetonal."]}, {"t": "finish", "q": "Ik runak la krevtonal", "e": "The soldiers quietly left the house.", "a": "la wimvant tivshar.", "d": ["la wimvant kroshar.", "la wimvantal tivshar.", "la wimvant rendizar."]}, {"t": "finish", "q": "Ik misat la vetonal", "e": "The people found water in the mountains.", "a": "purash rusha la yugenal.", "d": ["purash rusha la yugen.", "vidru rusha la yugenal.", "purash rusha la silven."]}, {"t": "finish", "q": "Ik letiv shala", "e": "He wrote a letter to his mother.", "a": "za letlex tu shalan lumani.", "d": ["za letlex tu shalin lumani.", "za lexmer tu shalan lumani.", "za letlex tash shalan lumani."]}, {"t": "finish", "q": "Un krevan la krevtonal", "e": "The soldiers will defend the city with their guns.", "a": "la metren cul shalalin vakristal.", "d": ["la metren culruna shalalin vakristal.", "la metren cul shalalin vakrist.", "la metren cul talalin vakristal."]}, {"t": "finish", "q": "Ik fre la banil", "e": "The girls fled across the river.", "a": "akrot la flenu.", "d": ["akrot la yugen.", "thena la flenu.", "irama la flenu."]}, {"t": "finish", "q": "Ik donel talin lumani", "e": "My mother gave bread and soup to the soldiers.", "a": "grenu ket brosk tu la krevtonal.", "d": ["grenu ket brosk tash la krevtonal.", "grenu pa brosk tu la krevtonal.", "kasa ket brosk tu la krevtonal."]}, {"t": "finish", "q": "Ik vivav la fenveton", "e": "The traitor killed the king with a knife.", "a": "la regasa cul za conto.", "d": ["la regasi cul za conto.", "la regasa cul za vakrist.", "la regasa culruna za conto."]}, {"t": "finish", "q": "Ik makos talin lumana", "e": "My father built a red door for our house.", "a": "za kav vant faren talalin wimvant.", "d": ["za zul vant faren talalin wimvant.", "za kav vant faren shalalin wimvant.", "za vant kav faren talalin wimvant."]}, {"t": "finish", "q": "Un katulas talin hanta", "e": "My husband will return from the border soon.", "a": "tash la maren pumek.", "d": ["tu la maren pumek.", "tash la maren pumam.", "tash la flenu pumek."]}, {"t": "finish", "q": "Ik posel la regasi", "e": "The queen sent a letter to the general.", "a": "za letlex tu la kranveton.", "d": ["za letlex tash la kranveton.", "za lexmer tu la kranveton.", "za letlex tu la krevtonal."]}, {"t": "finish", "q": "Un chalat talal", "e": "We will follow the river to the north.", "a": "la flenu tu la lonor.", "d": ["la flenu tu la lonev.", "la yugen tu la lonor.", "la flenu tu la lonux."]}, {"t": "finish", "q": "Ik motrened talin lumanbetala", "e": "My uncle drove the vehicle through the forest.", "a": "la motren irama la silven.", "d": ["la motren akrot la flenu.", "la motrenal irama la silven.", "la motren irama la yugen."]}, {"t": "finish", "q": "Ik vivoted", "e": "Thirty-eight people died in the war.", "a": "tirzer yul vetonal rusha la krevot.", "d": ["tirzer zek vetonal rusha la krevot.", "tiryul zer vetonal rusha la krevot.", "tirzer yul veton rusha la krevot."]}, {"t": "finish", "q": "Un torvos la vetonal", "e": "The people will rejoice after the war.", "a": "vekam la krevot.", "d": ["vekak la krevot.", "vekam la krevos.", "vekam la voshot."]}, {"t": "finish", "q": "Ik dermuked la krevton", "e": "The soldier wounded the rebel with a knife.", "a": "la voshakveton cul za conto.", "d": ["la voshakvetonal cul za conto.", "la voshakveton cul za vakrist.", "la voshakveton culruna za conto."]}], "r3": [{"t": "meaning", "q": "Vezon ik wedak la krevtonal timas la maren, ik fre la vetonal tu la yugenal.", "e": "", "a": "When the soldiers arrived at the border, the people fled to the mountains.", "d": ["When the soldiers left the border, the people fled to the mountains.", "When the soldiers arrived at the border, the people fled to the forest.", "When the people arrived at the border, the soldiers fled to the mountains."]}, {"t": "meaning", "q": "Ik vosham la voshakvetonal vekam la krevot, ravon ik iso shalal zohot nesh.", "e": "", "a": "The rebels surrendered after the war because they had no food.", "d": ["The rebels surrendered before the war because they had no food.", "The rebels surrendered after the war because they had no weapons.", "The soldiers surrendered after the war because they had no food."]}, {"t": "meaning", "q": "Un wedam talal la metren rusha la donak, tozeb nopa wedak la krevtonal nod.", "e": "", "a": "We will leave the city in the morning if the soldiers do not arrive tonight.", "d": ["We will leave the city in the evening if the soldiers do not arrive tonight.", "We will leave the city in the morning if the soldiers arrive tonight.", "We left the city in the morning because the soldiers did not arrive tonight."]}, {"t": "meaning", "q": "Iso la regasa za tref yoldiz grasolkam, shen iso shala merot krevtonal.", "e": "", "a": "The king has a very big prison, but he has few soldiers.", "d": ["The king has a very big prison, but he has many soldiers.", "The king has a very small prison, but he has few soldiers.", "The queen has a very big prison, but she has few soldiers."]}, {"t": "meaning", "q": "Ik kreved la krevtonal getashar, narune ik im kilt la vetonal rusha la wimton.", "e": "", "a": "The soldiers fought together while the people were hiding in the shelter.", "d": ["The soldiers fought alone while the people were hiding in the shelter.", "The soldiers fought together while the people were sleeping in the shelter.", "The rebels fought together while the people were hiding in the shelter."]}, {"t": "meaning", "q": "Ik fen la kranveton tu la regasi suren la krevot.", "e": "", "a": "The general lied to the queen about the war.", "d": ["The general lied to the king about the war.", "The general spoke to the queen about the war.", "The general lied to the queen about the peace."]}, {"t": "meaning", "q": "La vrekal et fivzul, shen la aveth et nodero.", "e": "", "a": "The trees are green, but the sky is grey.", "d": ["The trees are yellow, but the sky is grey.", "The trees are green, but the sky is blue.", "The trees are green, and the sky is grey."]}, {"t": "meaning", "q": "Ik makos la krevtonal tirtol wimvantal, shen ik flarav la voshakvetonal tir.", "e": "", "a": "The soldiers built twenty houses, but the rebels burned ten.", "d": ["The soldiers built twenty houses, but the rebels burned two.", "The soldiers built twelve houses, but the rebels burned ten.", "The rebels built twenty houses, but the soldiers burned ten."]}, {"t": "meaning", "q": "Ik purashat talin lumani la hidashal, ket ik tavro talin lumana yogpur.", "e": "", "a": "My mother washed the blankets and my father cooked stew.", "d": ["My father washed the blankets and my mother cooked stew.", "My mother washed the blanket and my father cooked stew.", "My mother washed the blankets and my father cooked soup."]}, {"t": "meaning", "q": "Ik rushak solop krevtonal la grasolkam, shen ik zumara freduv la grasolvetonal.", "e": "", "a": "Some soldiers entered the prison cell, but the prisoners had already escaped.", "d": ["Some soldiers entered the prison cell, but the prisoners had not escaped yet.", "All the soldiers entered the prison cell, but the prisoners had already escaped.", "Some soldiers left the prison cell, but the prisoners had already escaped."]}, {"t": "meaning", "q": "Ik rekat la voshakvetonal shodaral tash la krevtonal, ket un krevat shalal la metren nod.", "e": "", "a": "The rebels stole bullets from the soldiers, and they will attack the city tonight.", "d": ["The rebels stole bullets from the soldiers, and they attacked the city at night.", "The rebels stole guns from the soldiers, and they will attack the city tonight.", "The soldiers stole bullets from the rebels, and they will attack the city tonight."]}, {"t": "meaning", "q": "Splet shalal tu la silven molen, shen splet shalal tu la yugenal fanet.", "e": "", "a": "They often go to the forest, but they never go to the mountains.", "d": ["They never go to the forest, but they often go to the mountains.", "They often go to the forest, but they never go to the river.", "We often go to the forest, but we never go to the mountains."]}, {"t": "meaning", "q": "Ik oltardot shali talin senit, shen im oltard shali talin lumanbetala.", "e": "", "a": "She forgot my name, but she remembers my uncle.", "d": ["She remembers my name, but she forgot my uncle.", "She forgot my name, but she remembers my aunt.", "He forgot my name, but he remembers my uncle."]}, {"t": "meaning", "q": "Iso talal enola rota faren la lumangetash, shen nopa iso talal purash.", "e": "", "a": "We have enough rice for the family, but we do not have water.", "d": ["We have some rice for the family, but we do not have water.", "We have enough rice for the family, but we do not have bread.", "We had enough rice for the family, but we did not have water."]}, {"t": "meaning", "q": "Yulim im somnam la banal rusha la kam, narune im tavro talin lumani brosk.", "e": "", "a": "The children are still sleeping in the room while my mother is cooking soup.", "d": ["The children are still eating in the room while my mother is cooking soup.", "The children are still sleeping in the room while my father is cooking soup.", "The children are still sleeping in the room while my mother is cooking stew."]}, {"t": "meaning", "q": "Ik nopa jas wedak la regasa, ket la vetonal et brenesh.", "e": "", "a": "The king has not arrived yet, and the people are angry.", "d": ["The king has already arrived, and the people are angry.", "The king has not arrived yet, and the people are happy.", "The queen has not arrived yet, and the people are angry."]}, {"t": "meaning", "q": "Ik freduv la grasolvetonal tash la grasolkam timas nod, vezon ik im somnam la krevtonal.", "e": "", "a": "The prisoners escaped from the cell at night, when the soldiers were sleeping.", "d": ["The prisoners escaped from the cell in the morning, when the soldiers were sleeping.", "The prisoner escaped from the cell at night, when the soldiers were sleeping.", "The prisoners escaped from the cell at night, when the soldiers were fighting."]}, {"t": "meaning", "q": "La regasveton et zethot, ket ik fenat shala la lumangetash.", "e": "", "a": "The leader is corrupt, and he betrayed the family.", "d": ["The leader is honest, and he betrayed the family.", "The leader is corrupt, and he will betray the family.", "The general is corrupt, and he betrayed the family."]}, {"t": "meaning", "q": "Ik tavro talin olarlumani yogpur faren la lumangetash, ravon ik wedak talin lumanbetala tash la maren.", "e": "", "a": "My grandmother cooked stew for the family because my uncle arrived from the border.", "d": ["My grandmother cooked soup for the family because my uncle arrived from the border.", "My grandfather cooked stew for the family because my uncle arrived from the border.", "My grandmother cooked stew for the family because my aunt arrived from the border."]}, {"t": "meaning", "q": "Ik loc la banil meros avethflaral rusha la aveth, ket ik loc shalal la nodflar.", "e": "", "a": "The girls saw many stars in the sky, and they saw the moon.", "d": ["The girls saw few stars in the sky, and they saw the moon.", "The boys saw many stars in the sky, and they saw the moon.", "The girls saw many stars in the sky, and they saw the sun."]}], "r4": [{"t": "convo", "q": "Im licar tem?", "e": "Are you coming?", "r": "Yes, I'm coming.", "a": "Yah, im licar tal.", "d": ["Yah, im licar shala.", "Nop, ik licar tal.", "Yah, un licar tem."]}, {"t": "convo", "q": "Sannir im splet tem?", "e": "Where are you going?", "r": "I'm going to the river.", "a": "Im splet tal tu la flenu.", "d": ["Ik splet tal tu la flenu.", "Yah, im splet tal.", "Im splet tem tu la flenu."]}, {"t": "convo", "q": "Sansak ik rekat la klis?", "e": "Who stole the key?", "r": "The traitor stole the key.", "a": "Ik rekat la fenveton la klis.", "d": ["Un rekat la fenveton la klis.", "Ik misat la fenveton la klis.", "Yah, ik rekat tal."]}, {"t": "convo", "q": "Sanket ik fre la vetonal?", "e": "Why did the people flee?", "r": "Because the soldiers attacked the city.", "a": "Ravon ik krevat la krevtonal la metren.", "d": ["Ravon un krevat la krevtonal la metren.", "Vezon ik krevat la krevtonal la metren.", "Ravon ik makos la krevtonal la metren."]}, {"t": "convo", "q": "Sanah un wedak la regasa?", "e": "When will the king arrive?", "r": "The king will arrive in the morning.", "a": "Un wedak la regasa rusha la donak.", "d": ["Ik wedak la regasa rusha la donak.", "Un wedam la regasa rusha la donak.", "Nirel."]}, {"t": "convo", "q": "Iso tem nesh?", "e": "Do you have food?", "r": "I only have bread.", "a": "Iso tal onlay grenu.", "d": ["Iso tem onlay grenu.", "Neshat tal onlay grenu.", "Ik iso tal onlay grenu."]}, {"t": "convo", "q": "Oltard tem la volosum?", "e": "Do you know the truth?", "r": "Yes. The truth is dangerous.", "a": "Yah. La volosum et spenotesh.", "d": ["Yah. La volosum et gustesh.", "Sansak la volosum?", "Nop, oltard tem la volosum."]}, {"t": "convo", "q": "Fesh et temin lumani?", "e": "How is your mother?", "r": "She is sad. My father died.", "a": "Shali et torvotesh. Ik vivoted talin lumana.", "d": ["Shala et torvotesh. Ik vivoted talin lumana.", "Shali et torvotesh. Un vivoted talin lumana.", "Shali et gustesh."]}, {"t": "convo", "q": "Tem et jalashiz?", "e": "Are you hungry?", "r": "No, I'm full. I ate seafood.", "a": "Nop, tal et jalashuz. Ik neshat tal purnesh.", "d": ["Yah, tal et jalashuz. Ik neshat tal purnesh.", "Nop, tal et jalashuz. Un neshat tal purnesh.", "Nop, shali et jalashuz. Ik neshat tal purnesh."]}, {"t": "convo", "q": "Fidos tem la kranveton?", "e": "Do you trust the general?", "r": "No. He betrayed the king.", "a": "Nop. Ik fenat shala la regasa.", "d": ["Yah. Ik fenat shala la regasa.", "Nop. Ik tonked shala la regasa.", "Nop. Ik fenat tal la regasa."]}, {"t": "convo", "q": "Itlu kreved tem?", "e": "Can you fight?", "r": "Yes, I can fight. I have a gun.", "a": "Yah, itlu kreved tal. Iso tal za vakrist.", "d": ["Yah, itlu kreved tem. Iso tal za vakrist.", "Nop, itlu kreved tal. Iso tal za vakrist.", "Yah, ik kreved tal. Iso tal za vakrist."]}, {"t": "convo", "q": "Im somnam la banal?", "e": "Are the children asleep?", "r": "Yes, they are sleeping in the room.", "a": "Yah, im somnam shalal rusha la kam.", "d": ["Yah, im somnam shala rusha la kam.", "Nop, im somnam shalal rusha la kam.", "Yah, un somnam shalal rusha la kam."]}, {"t": "convo", "q": "Sant iso tem rusha la motren?", "e": "What do you have in the vehicle?", "r": "I have twenty-five guns and many bullets.", "a": "Iso tal tirtol velo vakristal ket meros shodaral.", "d": ["Iso tal tirvelo tol vakristal ket meros shodaral.", "Iso tem tirtol velo vakristal ket meros shodaral.", "Ik iso tal tirtol velo vakristal ket meros shodaral."]}, {"t": "convo", "q": "Un fre tem tash la metren?", "e": "Will you flee from the city?", "r": "No. My family is here.", "a": "Nop. Talin lumangetash et nirel.", "d": ["Yah. Talin lumangetash et zovar.", "Nop. Talin lumangetash et zovar.", "Nop. Shalin lumangetash et nirel."]}, {"t": "convo", "q": "Sant ik locan tem?", "e": "What did you read?", "r": "I read my mother's letter.", "a": "Ik locan tal talin lumanin letlex.", "d": ["Ik letiv tal talin lumanin letlex.", "Ik locan tem talin lumanin letlex.", "Un locan tal talin lumanin letlex."]}, {"t": "convo", "q": "Sannir im kesh la regasi?", "e": "Where is the queen sitting?", "r": "On the throne.", "a": "Thena la regaskesh.", "d": ["Thena la kranregas.", "Rusha la donam.", "Yah, im kesh shali."]}, {"t": "convo", "q": "Fesh ik freduv tem?", "e": "How did you escape?", "r": "I ran through the forest.", "a": "Ik rulit tal irama la silven.", "d": ["Un rulit tal irama la silven.", "Ik rulit tem irama la silven.", "Ravon la silven."]}, {"t": "convo", "q": "Sanket et tem brenesh?", "e": "Why are you angry?", "r": "Because my brother stole my gun.", "a": "Ravon ik rekat talin betala talin vakrist.", "d": ["Vezon ik rekat talin betala talin vakrist.", "Ravon ik donel talin betala talin vakrist.", "Ravon ik rekat tal talin vakrist."]}, {"t": "convo", "q": "Iso tem yana shodaral?", "e": "Do you have any bullets?", "r": "No. I lost all my bullets.", "a": "Nop. Ik misen tal zohos talin shodaral.", "d": ["Yah. Ik misen tal zohos talin shodaral.", "Nop. Ik misat tal zohos talin shodaral.", "Nop. Ik misen shala zohos talin shodaral."]}, {"t": "convo", "q": "Sanah ik wedak temin hanti?", "e": "When did your wife arrive?", "r": "She arrived in the evening.", "a": "Ik wedak shali rusha la donam.", "d": ["Un wedak shali rusha la donam.", "Ik wedam shali rusha la donam.", "Ik wedak shala rusha la donam."]}], "r4p": [{"t": "passage", "lines": [{"s": "A", "sol": "Sannir im {splet} tem?", "eng": "Where are you going?"}, {"s": "B", "sol": "Im splet tal tu la {maren}. Talin {betala} et rusha la grasolkam.", "eng": "I'm going to the border. My brother is in the prison cell."}, {"s": "A", "sol": "Sanket et shala rusha la grasolkam?", "eng": "Why is he in the cell?"}, {"s": "B", "sol": "Ravon ik {rekat} shala {shodaral} tash la krevtonal.", "eng": "Because he stole bullets from the soldiers."}, {"s": "A", "sol": "Sanah un {katulas} shala?", "eng": "When will he return?"}, {"s": "B", "sol": "Tozeb {donel} tal nesh tu la krevtonal, un katulas shala {pumek}.", "eng": "If I give food to the soldiers, he will return soon."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Im {denu} tem la voshakvetonal?", "eng": "Do you hear the rebels?"}, {"s": "B", "sol": "Yah. Im kilt shalal rusha la {silven}, distuz la {flenu}.", "eng": "Yes. They are hiding in the forest, near the river."}, {"s": "A", "sol": "Iso shalal {vakristal}?", "eng": "Do they have guns?"}, {"s": "B", "sol": "Yah, ket meros shodaral.", "eng": "Yes, and many bullets."}, {"s": "A", "sol": "Sant un {kelo} talal?", "eng": "What will we do?"}, {"s": "B", "sol": "Un {wedam} talal {nod}. Un volat talal la {kranveton}.", "eng": "We will leave tonight. We will tell the general."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Lumani, tal et {jalashiz}. Iso talal {nesh}?", "eng": "Mother, I am hungry. Do we have food?"}, {"s": "B", "sol": "Iso talal {grenu} ket {kasa}. Ik misat talin {hanta} {shel} rusha la flenu.", "eng": "We have bread and cheese. My husband found fish in the river."}, {"s": "A", "sol": "Un {tavro} tem la shel?", "eng": "Will you cook the fish?"}, {"s": "B", "sol": "Yah, un tavro tal la shel rusha la {donam}.", "eng": "Yes, I will cook the fish in the evening."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Ik {rekat} la fenveton la {kranregas}.", "eng": "The traitor stole the crown."}, {"s": "B", "sol": "Sannir ik {freduv} shala?", "eng": "Where did he escape to?"}, {"s": "A", "sol": "Ik fre shala tu la {yugenal}, tu la {lonor}.", "eng": "He fled to the mountains, to the north."}, {"s": "B", "sol": "Un {cholo} la krevtonal la fenveton?", "eng": "Will the soldiers chase the traitor?"}, {"s": "A", "sol": "Yah. Ven la {regasi} la kranregas {vune}.", "eng": "Yes. The queen wants the crown back."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Ik {katulas} temin lumana tash la {krevot}?", "eng": "Did your father return from the war?"}, {"s": "B", "sol": "Yah. Ik wedak shala rusha la {donak}, cul {tol} krevtonal.", "eng": "Yes. He arrived in the morning, with two soldiers."}, {"s": "A", "sol": "Shala et {milos}?", "eng": "Is he happy?"}, {"s": "B", "sol": "Yah, shen shala et tref {torvotesh} faren shalan {belasal}.", "eng": "Yes, but he is very sad for his friends."}, {"s": "A", "sol": "Sanket?", "eng": "Why?"}, {"s": "B", "sol": "Ravon ik {vivoted} meros shalan belasal rusha la krevot.", "eng": "Because many of his friends died in the war."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Iso tem {vreknesh}?", "eng": "Do you have fruit?"}, {"s": "B", "sol": "Nopa iso tal vreknesh, shen iso tal {rota} ket {kasa}.", "eng": "I do not have fruit, but I have rice and cheese."}, {"s": "A", "sol": "Ven tal grenu ket {brosk} faren talin {lumangetash}.", "eng": "I want bread and soup for my family."}, {"s": "B", "sol": "Ik {tavro} talin hanti brosk dorn {donak}.", "eng": "My wife cooked soup this morning."}, {"s": "A", "sol": "Tref {gamos}.", "eng": "Very good."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Sansak et rusha la {kam}?", "eng": "Who is in the room?"}, {"s": "B", "sol": "Za {dervet}. Iso shala za {dermuk} thena shalan {pel}.", "eng": "A patient. He has a wound on his foot."}, {"s": "A", "sol": "Itlu {shomat} shala?", "eng": "Can he walk?"}, {"s": "B", "sol": "Nop. Un {somnam} shala nirel nod, ket un {katulas} shala tu {reston} rusha la donak.", "eng": "No. He will sleep here tonight, and he will return home in the morning."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Sannir et la {banal}?", "eng": "Where are the boys?"}, {"s": "B", "sol": "Im {culos} shalal la vrekal rusha la silven.", "eng": "They are climbing the trees in the forest."}, {"s": "A", "sol": "La silven et {spenotesh}. Ik loc talin lumana za yoldiz {zeval} nirim dorn {donam}.", "eng": "The forest is dangerous. My father saw a big animal there this evening."}, {"s": "B", "sol": "Un {kolat} tal la banal {pumar}, ket un katulas talal tu {reston}.", "eng": "I will call the boys now, and we will go back home."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Ik {freduv} la grasolvetonal tash la grasolkam!", "eng": "The prisoners escaped from the cell!"}, {"s": "B", "sol": "Sanah?", "eng": "When?"}, {"s": "A", "sol": "Ik {nod}, vezon ik im {somnam} la krevtonal.", "eng": "Last night, while the soldiers were sleeping."}, {"s": "B", "sol": "Sannir ik fre shalal?", "eng": "Where did they flee?"}, {"s": "A", "sol": "Irama la {silven}, tu la {flenu}.", "eng": "Through the forest, to the river."}, {"s": "B", "sol": "Un {cholo} talal la grasolvetonal {rendizar}, ket un {kolat} tal la kranveton.", "eng": "We will chase the prisoners quickly, and I will call the general."}]}, {"t": "passage", "lines": [{"s": "A", "sol": "Sannir ik {kiltat} tem la vakristal?", "eng": "Where did you hide the guns?"}, {"s": "B", "sol": "Rusha la {wimton}, viras tol {vrekal}.", "eng": "In the shelter, between two trees."}, {"s": "A", "sol": "Oltard la {krevtonal}?", "eng": "Do the soldiers know?"}, {"s": "B", "sol": "Nop. Oltard onlay talin {betala}.", "eng": "No. Only my brother knows."}, {"s": "A", "sol": "{Fidos} tem temin betala?", "eng": "Do you trust your brother?"}, {"s": "B", "sol": "Yah. Ik {tonked} shala talin {lumangetash} rusha la krevot.", "eng": "Yes. He protected my family in the war."}]}], "r5c": [{"t": "convo", "q": "Im splet talal tu la silven. Im licar tem?", "e": "", "a": "Yah, im licar tal.", "d": ["Yah, im licar tem.", "Yah, ik licar tal.", "Nop, im licar tal."]}, {"t": "convo", "q": "Ik wedak la krevtonal timas la maren. Sanah un fre talal?", "e": "", "a": "Un fre talal rusha la donak.", "d": ["Ik fre talal rusha la donak.", "Thena la trelo.", "Ravon un fre talal."]}, {"t": "convo", "q": "Talin lumanbani et jalashiz. Iso tem nesh?", "e": "", "a": "Yah. Iso tal ternesh ket rota.", "d": ["Yah. Iso tal korath ket vreker.", "Nop. Iso tal ternesh ket rota.", "Yah. Iso tem ternesh ket rota."]}, {"t": "convo", "q": "Ik vivoted la regasa. Sansak un regased?", "e": "", "a": "Shalan lumanbana.", "d": ["Rusha la donak.", "Rusha la metren.", "Ravon shala et vivot."]}, {"t": "convo", "q": "Vezon ik wedak tal, ik im kreved la vetonal thena la trelo. Sanket?", "e": "", "a": "Ravon iso shalal zohot nesh.", "d": ["Thena la trelo.", "Rusha la donam.", "Yah, im kreved shalal."]}, {"t": "convo", "q": "Talin betala et vivos. Sannir et shala?", "e": "", "a": "Rusha la grasolkam, timas la maren.", "d": ["Rusha la donak.", "Ravon shala et vivos.", "Yah, shala et vivos."]}, {"t": "convo", "q": "Ik flarav la voshakvetonal talalin wimvant. Sannir un somnam talal?", "e": "", "a": "Rusha la wimton distuz la flenu.", "d": ["Rusha la flenu distuz la wimton.", "Ravon la wimton.", "Rusha la donam."]}, {"t": "convo", "q": "Im cholo la krevtonal la frevet. Sannir im kilt la frevet?", "e": "", "a": "Viras la vrekal timas la flenu.", "d": ["Rusha la donak.", "Ravon la krevtonal.", "Yah, im kilt shala."]}, {"t": "convo", "q": "Ven tal splet tu la metren. Fesh un splet tal?", "e": "", "a": "Un motrened tem la motren thena la trelo.", "d": ["Ik motrened tem la motren thena la trelo.", "Rusha la metren.", "Rusha la donam."]}, {"t": "convo", "q": "Talin hanta et torvotesh. Sanket?", "e": "", "a": "Ravon ik vivoted shalan lumani.", "d": ["Thena la trelo.", "Rusha la donam.", "Yah, shala et torvotesh."]}], "r5s": [{"t": "correct", "q": "", "e": "", "a": "Ik im kilt la voshakvetonal rusha la silven.", "d": ["Im ik kilt la voshakvetonal rusha la silven.", "Ik im la voshakvetonal kilt rusha la silven.", "Ik im kilt la voshakvetonin rusha la silven."]}, {"t": "correct", "q": "", "e": "", "a": "Un makos la vetonal yurk wimvantal.", "d": ["Un makos la vetonal yurk wimvantl.", "Makos un la vetonal yurk wimvantal.", "Un la vetonal makos yurk wimvantal."]}, {"t": "correct", "q": "", "e": "", "a": "Ik nopa wedak la krevtonal timas la maren.", "d": ["Nopa ik wedak la krevtonal timas la maren.", "Ik wedak nopa la krevtonal timas la maren.", "Ik nop wedak la krevtonal timas la maren."]}, {"t": "correct", "q": "", "e": "", "a": "Shali et talin lumanbetali.", "d": ["Shali talin lumanbetali.", "Shali et talin lumanbetala.", "Shali lumanbetali et talin."]}, {"t": "correct", "q": "", "e": "", "a": "Iso la regasa zer ondar tirvelo sev krevtonal.", "d": ["Iso la regasa tirvelo sev zer ondar krevtonal.", "Iso la regasa zer ondar tir velo sev krevtonal.", "Iso la regasa zer ondar tirvelo sev krevtonin."]}, {"t": "correct", "q": "", "e": "", "a": "Un kreved la krevtonal faren la regasi.", "d": ["Un la krevtonal kreved faren la regasi.", "Un kreved la krevtonin faren la regasi.", "Kreved un la krevtonal faren la regasi."]}, {"t": "correct", "q": "", "e": "", "a": "Ik vantak shala la vant renduzar.", "d": ["Ik vantak shala la vant renduz.", "Ik shala vantak la vant renduzar.", "Ik vantak la vant shala renduzar."]}, {"t": "correct", "q": "", "e": "", "a": "Ik posel la regasi za letlex tu la kranveton.", "d": ["Ik la regasi posel za letlex tu la kranveton.", "Ik posel la regasi zaz letlex tu la kranveton.", "Posel ik la regasi za letlex tu la kranveton."]}, {"t": "correct", "q": "", "e": "", "a": "Shala et talin olarlumana.", "d": ["Shala talin olarlumana.", "Shala et talin olarlumani.", "Et shala talin olarlumana."]}, {"t": "correct", "q": "", "e": "", "a": "La walt et kelvash yentuz.", "d": ["La walt et yentuz kelvash.", "La walt kelvash et yentuz.", "La walt et kelvash yentuzar."]}]};
+
+/* =========================================================
+   Quiz — five rounds of ten, each a different kind of question.
+   1 fill the gap · 2 finish the sentence · 3 what does it mean
+   4 conversation · 5 conversation and spot the correct sentence (no English)
+   ========================================================= */
+const ROUND_LENGTH = 10;
+const MAX_ROUNDS = 5;
+const TYPE_LABEL = {gap:"Fill the gap", finish:"Finish the sentence", meaning:"What does it mean?", convo:"Pick the right reply", passage:"Fill in the conversation", correct:"Which sentence is correct?"};
+
+let quizCurrent = null;
+let quizRounds = [];
+let round = 1;
+let score = {right:0, answered:0};
+let totalRight = 0;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function startQuizSession(){
+  const pick = (arr,n)=>shuffle(arr.slice()).slice(0,n);
+  quizRounds = [
+    pick(QUIZ_BANK.r1,10), pick(QUIZ_BANK.r2,10), pick(QUIZ_BANK.r3,10), pick(QUIZ_BANK.r4,8).concat(pick(QUIZ_BANK.r4p,2)),
+    shuffle(pick(QUIZ_BANK.r5c,5).concat(pick(QUIZ_BANK.r5s,5)))
+  ];
+  round = 1; totalRight = 0; score = {right:0, answered:0};
+  showQuizPlay(); pickQuizWord();
+}
+function showQuizPlay(){ document.getElementById('quizPlay').style.display=''; document.getElementById('quizCert').style.display='none'; }
+function updateScoreLine(){
+  document.getElementById('quizScore').textContent = `Round ${round} of ${MAX_ROUNDS}  ·  Question ${Math.min(score.answered+1, ROUND_LENGTH)} of ${ROUND_LENGTH}  ·  Score: ${score.right}`;
+}
+function esc(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function pickQuizWord(){
+  if(score.answered >= ROUND_LENGTH){ showCertificate(); return; }
+  const item = quizRounds[round-1][score.answered];
+  quizCurrent = item;
+  if(item.t==="passage"){ renderPassage(item); return; }
+  document.getElementById('quizPassage').style.display='none';
+  document.getElementById('quizOptions').style.display='';
+  document.getElementById('quizType').textContent = TYPE_LABEL[item.t];
+  let sol = esc(item.q);
+  if(item.t==="gap") sol = sol.replace(/___/g,'<span class="quiz-gap">____</span>');
+  if(item.t==="finish") sol += ' <span class="quiz-gap">…</span>';
+  const solEl = document.getElementById('quizSol');
+  solEl.innerHTML = sol; solEl.style.display = item.q ? '' : 'none';
+  const engEl = document.getElementById('quizEng');
+  engEl.innerHTML = esc(item.e) + (item.r ? `<div class="quiz-reply">Reply: ${esc(item.r)}</div>` : ''); engEl.style.display = item.e ? '' : 'none';
+  const options = shuffle([item.a, ...item.d]);
+  const optWrap = document.getElementById('quizOptions');
+  optWrap.className = 'quiz-options' + (item.t==="gap" ? '' : ' quiz-options-long') + (item.t==="meaning" ? ' quiz-options-eng' : '');
+  optWrap.innerHTML = options.map((o,i)=>`<button class="quiz-opt" data-i="${i}">${item.t==="finish" ? '… ' : ''}${esc(o)}</button>`).join('');
+  const status = document.getElementById('quizStatus');
+  status.textContent = ' '; status.className = 'quiz-status';
+  updateScoreLine();
+  const next = document.getElementById('quizNext');
+  next.textContent = 'Next question'; next.disabled = true; next.style.visibility = 'hidden';
+  optWrap.querySelectorAll('.quiz-opt').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      optWrap.querySelectorAll('.quiz-opt').forEach(b=>b.setAttribute('disabled','true'));
+      const chosen = options[+btn.dataset.i];
+      if(chosen===item.a){
+        btn.classList.add('correct'); score.right++; totalRight++;
+        status.textContent = 'Correct.'; status.className = 'quiz-status right';
+      } else {
+        btn.classList.add('wrong');
+        optWrap.querySelectorAll('.quiz-opt').forEach(b=>{ if(options[+b.dataset.i]===item.a) b.classList.add('correct'); });
+        status.textContent = 'Not quite. The right answer is highlighted.'; status.className = 'quiz-status wrong';
+      }
+      updateScoreLine();
+      score.answered++;
+      next.textContent = score.answered>=ROUND_LENGTH ? 'See your result' : 'Next question';
+      next.disabled = false; next.style.visibility = 'visible';
+    });
+  });
+}
+function renderPassage(item){
+  document.getElementById('quizType').textContent = TYPE_LABEL.passage;
+  document.getElementById('quizSol').style.display='none';
+  document.getElementById('quizEng').style.display='none';
+  document.getElementById('quizOptions').style.display='none';
+  const wrap = document.getElementById('quizPassage');
+  wrap.style.display='';
+  const answers = [];
+  let lines = '';
+  item.lines.forEach(l=>{
+    const sol = esc(l.sol).replace(/\{(\w+)\}/g,(m,w)=>{ answers.push(w); return `<button class="p-gap" data-k="${answers.length-1}">&nbsp;</button>`; });
+    lines += `<div class="p-line"><span class="p-who">${l.s}</span><div><div class="p-sol">${sol}</div><div class="p-eng">${esc(l.eng)}</div></div></div>`;
+  });
+  const words = shuffle(answers.slice());
+  wrap.innerHTML = `<div class="p-text">${lines}</div>
+    <div class="p-hint">Tap a word, then tap the gap it belongs in. Tap a filled gap to take the word back.</div>
+    <div class="p-bank">${words.map((w,i)=>`<button class="p-word" data-w="${i}">${esc(w)}</button>`).join('')}</div>
+    <button class="quiz-next" id="pCheck" disabled>Check</button>`;
+  const placed = new Array(answers.length).fill(null);   // gap -> word index
+  let selected = null;
+  const gaps = [...wrap.querySelectorAll('.p-gap')], chips = [...wrap.querySelectorAll('.p-word')];
+  const check = document.getElementById('pCheck');
+  function refresh(){
+    gaps.forEach((g,k)=>{ g.innerHTML = placed[k]===null ? '&nbsp;' : esc(words[placed[k]]); g.classList.toggle('filled', placed[k]!==null); });
+    chips.forEach((c,i)=>{ c.classList.toggle('used', placed.includes(i)); c.classList.toggle('sel', selected===i); });
+    check.disabled = placed.includes(null);
+  }
+  let done = false;
+  chips.forEach((c,i)=>c.addEventListener('click',()=>{ if(done || placed.includes(i)) return; selected = selected===i ? null : i; refresh(); }));
+  gaps.forEach((g,k)=>g.addEventListener('click',()=>{
+    if(done) return;
+    if(placed[k]!==null && selected===null){ placed[k]=null; refresh(); return; }
+    if(selected!==null){ placed[k]=selected; selected=null; refresh(); }
+  }));
+  const status = document.getElementById('quizStatus');
+  status.textContent=' '; status.className='quiz-status';
+  updateScoreLine();
+  const next = document.getElementById('quizNext');
+  next.disabled = true; next.style.visibility='hidden';
+  check.addEventListener('click',()=>{
+    done = true; check.style.display='none';
+    let allRight = true;
+    gaps.forEach((g,k)=>{
+      const ok = words[placed[k]]===answers[k];
+      if(!ok){ allRight=false; g.innerHTML = `<s>${esc(words[placed[k]])}</s> ${esc(answers[k])}`; }
+      g.classList.add(ok ? 'right' : 'wrong');
+    });
+    if(allRight){ score.right++; totalRight++; status.textContent='Correct. Every word is in the right place.'; status.className='quiz-status right'; }
+    else { status.textContent='Not quite. The right words are shown in the red gaps.'; status.className='quiz-status wrong'; }
+    updateScoreLine();
+    score.answered++;
+    next.textContent = score.answered>=ROUND_LENGTH ? 'See your result' : 'Next question';
+    next.disabled=false; next.style.visibility='visible';
+  });
+  refresh();
+}
+
+function showCertificate(){
+  const done = round*ROUND_LENGTH;
+  const final = round>=MAX_ROUNDS;
+  document.getElementById('quizPlay').style.display='none';
+  const cert = document.getElementById('quizCert');
+  cert.style.display='';
+  const perfect = totalRight===done;
+  cert.innerHTML = (perfect ? `
+    <img class="placement-card" src="${PLACEMENT_CARDS[round-1]}" alt="${done} out of ${done}">` : `
+    <div class="cert">
+      <div class="cert-head">Explore Eurussia</div>
+      <div class="cert-title">${final ? 'Certificate of Completion' : 'Certificate of Study'}</div>
+      <div class="cert-sub">Solari &nbsp;·&nbsp; ${final ? 'All five rounds' : `Round ${round} of ${MAX_ROUNDS}`}</div>
+      <div class="cert-score">${score.right} <span>/ ${ROUND_LENGTH}</span></div>
+      <div class="cert-line">${final ? `You answered all ${done} questions and got ${totalRight} right.` : `So far you have answered ${done} questions and got ${totalRight} right.`}</div>
+      <div class="cert-seal">${done}</div>
+    </div>`) + `
+    <div class="cert-actions">
+      ${final ? `<button class="quiz-next" id="certAgain">Start again</button>`
+              : `<button class="quiz-next" id="certContinue">Continue to round ${round+1}</button>
+                 <button class="quiz-next quiz-next-alt" id="certStop">Finish here</button>`}
+    </div>`;
+  if(final){
+    document.getElementById('certAgain').addEventListener('click', startQuizSession);
+  } else {
+    document.getElementById('certContinue').addEventListener('click', ()=>{ round++; score={right:0, answered:0}; showQuizPlay(); pickQuizWord(); });
+    document.getElementById('certStop').addEventListener('click', startQuizSession);
+  }
+}
+document.getElementById('quizNext').addEventListener('click', pickQuizWord);
+document.querySelector('.hs-table-left').addEventListener('click', ()=>{ if(!quizCurrent) startQuizSession(); });
+
+/* =========================================================
+   Sentence Builder — real grammatical sentence construction
+   ========================================================= */
+const PRONOUNS = [
+  {sol:"tal", eng:"I", third:false, poss:"talin", possEng:"my"},
+  {sol:"tem", eng:"you", third:false, poss:"temin", possEng:"your"},
+  {sol:"shala", eng:"he", third:true, poss:"shalan", possEng:"his"},
+  {sol:"shali", eng:"she", third:true, poss:"shalin", possEng:"her"},
+  {sol:"talal", eng:"we", third:false, poss:"talalin", possEng:"our"},
+  {sol:"temal", eng:"you all", third:false, poss:"temalin", possEng:"your"},
+  {sol:"shalal", eng:"they", third:false, poss:"shalalin", possEng:"their"}
+];
+
+const TENSES = [
+  {key:"present", label:"Present", particle:""},
+  {key:"past", label:"Past", particle:"ik"},
+  {key:"future", label:"Future", particle:"un"}
+];
+
+// Every verb lists only the objects that make sense with it. Verbs with no list stand on their own.
+const SENTENCE_OBJECTS = {"betala": {"label": "brother", "eng": "a brother", "sol": "za betala"}, "betali": {"label": "sister", "eng": "a sister", "sol": "za betali"}, "lumana": {"label": "father", "eng": "a father", "sol": "za lumana"}, "lumani": {"label": "mother", "eng": "a mother", "sol": "za lumani"}, "lumanbana": {"label": "son", "eng": "a son", "sol": "za lumanbana"}, "lumanbani": {"label": "daughter", "eng": "a daughter", "sol": "za lumanbani"}, "hanta": {"label": "husband", "eng": "a husband", "sol": "za hanta"}, "hanti": {"label": "wife", "eng": "a wife", "sol": "za hanti"}, "bana": {"label": "boy", "eng": "a boy", "sol": "za bana"}, "bani": {"label": "girl", "eng": "a girl", "sol": "za bani"}, "belasa": {"label": "friend (man)", "eng": "a friend", "sol": "za belasa"}, "belasi": {"label": "friend (woman)", "eng": "a friend", "sol": "za belasi"}, "vorima": {"label": "enemy (man)", "eng": "an enemy", "sol": "zaz vorima"}, "vorimi": {"label": "enemy (woman)", "eng": "an enemy", "sol": "zaz vorimi"}, "veton": {"label": "person", "eng": "a person", "sol": "za veton"}, "tergrama": {"label": "stranger (man)", "eng": "a stranger", "sol": "za tergrama"}, "tergrami": {"label": "stranger (woman)", "eng": "a stranger", "sol": "za tergrami"}, "regasa": {"label": "king", "eng": "the king", "sol": "la regasa"}, "regasi": {"label": "queen", "eng": "the queen", "sol": "la regasi"}, "krevton": {"label": "soldier", "eng": "a soldier", "sol": "za krevton"}, "kranveton": {"label": "general", "eng": "the general", "sol": "la kranveton"}, "regasveton": {"label": "leader", "eng": "a leader", "sol": "za regasveton"}, "fenveton": {"label": "traitor", "eng": "a traitor", "sol": "za fenveton"}, "voshakveton": {"label": "rebel", "eng": "a rebel", "sol": "za voshakveton"}, "grasolveton": {"label": "prisoner", "eng": "a prisoner", "sol": "za grasolveton"}, "lumangetash": {"label": "family", "eng": "the family", "sol": "la lumangetash"}, "getash": {"label": "group", "eng": "a group", "sol": "za getash"}, "konselal": {"label": "councillors", "eng": "the councillors", "sol": "la konselal"}, "zeval": {"label": "animal", "eng": "an animal", "sol": "zaz zeval"}, "nesh": {"label": "food", "eng": "food", "sol": "nesh"}, "grenu": {"label": "bread", "eng": "bread", "sol": "grenu"}, "yognesh": {"label": "meat", "eng": "meat", "sol": "yognesh"}, "shel": {"label": "fish", "eng": "a fish", "sol": "za shel"}, "brosk": {"label": "soup", "eng": "soup", "sol": "brosk"}, "kasa": {"label": "cheese", "eng": "cheese", "sol": "kasa"}, "rota": {"label": "rice", "eng": "rice", "sol": "rota"}, "vreknesh": {"label": "fruit", "eng": "fruit", "sol": "vreknesh"}, "ternesh": {"label": "vegetable", "eng": "a vegetable", "sol": "za ternesh"}, "purnesh": {"label": "seafood", "eng": "seafood", "sol": "purnesh"}, "yogpur": {"label": "stew", "eng": "stew", "sol": "yogpur"}, "purash": {"label": "water", "eng": "water", "sol": "purash"}, "lexmer": {"label": "book", "eng": "a book", "sol": "za lexmer"}, "letlex": {"label": "letter", "eng": "a letter", "sol": "za letlex"}, "klis": {"label": "key", "eng": "a key", "sol": "za klis"}, "vakorkrev": {"label": "weapon", "eng": "a weapon", "sol": "za vakorkrev"}, "vakrist": {"label": "gun", "eng": "a gun", "sol": "za vakrist"}, "conto": {"label": "knife", "eng": "a knife", "sol": "za conto"}, "hidash": {"label": "blanket", "eng": "a blanket", "sol": "za hidash"}, "tonder": {"label": "armour", "eng": "armour", "sol": "tonder"}, "korath": {"label": "stone", "eng": "a stone", "sol": "za korath"}, "vreker": {"label": "wood", "eng": "wood", "sol": "vreker"}, "kranregas": {"label": "crown", "eng": "the crown", "sol": "la kranregas"}, "vant": {"label": "door", "eng": "a door", "sol": "za vant"}, "wim": {"label": "wall", "eng": "a wall", "sol": "za wim"}, "wimvant": {"label": "house", "eng": "a house", "sol": "za wimvant"}, "wimton": {"label": "shelter", "eng": "a shelter", "sol": "za wimton"}, "burmar": {"label": "bed", "eng": "a bed", "sol": "za burmar"}, "flar": {"label": "fire", "eng": "fire", "sol": "flar"}, "vrek": {"label": "tree", "eng": "a tree", "sol": "za vrek"}, "volosum": {"label": "truth", "eng": "the truth", "sol": "la volosum"}, "gazeth": {"label": "honour", "eng": "honour", "sol": "gazeth"}, "senit": {"label": "name", "eng": "a name", "sol": "za senit"}, "lex": {"label": "word", "eng": "a word", "sol": "za lex"}, "krevot": {"label": "war", "eng": "war", "sol": "krevot"}, "krevos": {"label": "peace", "eng": "peace", "sol": "krevos"}, "seno": {"label": "promise", "eng": "a promise", "sol": "za seno"}, "tonkum": {"label": "safety", "eng": "safety", "sol": "tonkum"}, "spenosum": {"label": "hope", "eng": "hope", "sol": "spenosum"}, "vidru": {"label": "blood", "eng": "blood", "sol": "vidru"}, "silven": {"label": "forest", "eng": "the forest", "sol": "la silven"}, "dervet": {"label": "patient", "eng": "a patient", "sol": "za dervet"}, "frevet": {"label": "escapee", "eng": "an escapee", "sol": "zaz frevet"}, "regaskesh": {"label": "throne", "eng": "the throne", "sol": "la regaskesh"}, "kam": {"label": "room", "eng": "a room", "sol": "za kam"}, "metren": {"label": "city", "eng": "the city", "sol": "la metren"}, "grasolkam": {"label": "prison cell", "eng": "the prison cell", "sol": "la grasolkam"}, "shodar": {"label": "bullet", "eng": "a bullet", "sol": "za shodar"}, "shodaral": {"label": "bullets", "eng": "bullets", "sol": "shodaral"}, "motren": {"label": "vehicle", "eng": "a vehicle", "sol": "za motren"}, "shelem": {"label": "fishing", "eng": "fishing", "sol": "shelem"}, "rulitem": {"label": "running", "eng": "running", "sol": "rulitem"}, "tavrom": {"label": "cooking", "eng": "cooking", "sol": "tavrom"}, "zumekem": {"label": "jumping", "eng": "jumping", "sol": "zumekem"}, "frem": {"label": "fleeing", "eng": "fleeing", "sol": "frem"}, "fideshum": {"label": "loyalty", "eng": "loyalty", "sol": "fideshum"}, "dermuk": {"label": "wound", "eng": "a wound", "sol": "za dermuk"}};
+const BUILDER_VERBS = [{"root": "iso", "base": "have", "third": "has", "past": "had", "ing": "having", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "vant", "wim", "wimvant", "wimton", "senit", "gazeth", "dermuk"], "stative": true}, {"root": "oltard", "base": "know", "third": "knows", "past": "knew", "ing": "knowing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal", "volosum", "senit"], "stative": true, "idiom": {"base": "remember", "third": "remembers", "ing": "remembering"}}, {"root": "oltardot", "base": "forget", "third": "forgets", "past": "forgot", "ing": "forgetting", "objects": ["senit", "lex", "seno", "klis", "letlex"]}, {"root": "ven", "base": "want", "third": "wants", "past": "wanted", "ing": "wanting", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "vant", "wim", "wimvant", "wimton", "purash", "krevos", "krevot", "volosum", "tonkum"], "stative": true}, {"root": "loc", "base": "see", "third": "sees", "past": "saw", "ing": "seeing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "vant", "wim", "wimvant", "wimton", "flar", "vrek", "zeval"], "stative": true}, {"root": "mentat", "base": "believe", "third": "believes", "past": "believed", "ing": "believing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "volosum"], "stative": true}, {"root": "karos", "base": "love", "third": "loves", "past": "loved", "ing": "loving", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "krevos", "volosum", "gazeth", "shelem", "rulitem", "tavrom", "zumekem"], "stative": true}, {"root": "karot", "base": "hate", "third": "hates", "past": "hated", "ing": "hating", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal", "krevot", "shelem", "rulitem", "tavrom", "zumekem"], "stative": true}, {"root": "spenos", "base": "hope", "third": "hopes", "past": "hoped", "ing": "hoping", "objects": []}, {"root": "spenot", "base": "fear", "third": "fears", "past": "feared", "ing": "fearing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal", "krevot", "flar", "vakrist", "vakorkrev"], "stative": true, "idiom": {"base": "worry about", "third": "worries about", "ing": "worrying about"}}, {"root": "spenat", "base": "miss", "third": "misses", "past": "missed", "ing": "missing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal"]}, {"root": "fidos", "base": "trust", "third": "trusts", "past": "trusted", "ing": "trusting", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal"], "stative": true}, {"root": "fidot", "base": "doubt", "third": "doubts", "past": "doubted", "ing": "doubting", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal", "volosum"], "stative": true}, {"root": "karan", "base": "forgive", "third": "forgives", "past": "forgave", "ing": "forgiving", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal"]}, {"root": "karat", "base": "thank", "third": "thanks", "past": "thanked", "ing": "thanking", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal"]}, {"root": "grasol", "base": "hold", "third": "holds", "past": "held", "ing": "holding", "objects": ["lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "bana", "bani"]}, {"root": "grasil", "base": "carry", "third": "carries", "past": "carried", "ing": "carrying", "objects": ["lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "bana", "bani", "purash"]}, {"root": "donel", "base": "give", "third": "gives", "past": "gave", "ing": "giving", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "purash"]}, {"root": "leted", "base": "hand over", "third": "hands over", "past": "handed over", "ing": "handing over", "objects": ["lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral"]}, {"root": "donan", "base": "receive", "third": "receives", "past": "received", "ing": "receiving", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral"]}, {"root": "rek", "base": "take", "third": "takes", "past": "took", "ing": "taking", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral"]}, {"root": "rekat", "base": "steal", "third": "steals", "past": "stole", "ing": "stealing", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral"]}, {"root": "voshat", "base": "throw", "third": "throws", "past": "threw", "ing": "throwing", "objects": ["korath", "conto", "klis", "lexmer", "vakorkrev"]}, {"root": "misat", "base": "find", "third": "finds", "past": "found", "ing": "finding", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "volosum", "wimton", "purash"]}, {"root": "misen", "base": "lose", "third": "loses", "past": "lost", "ing": "losing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "krevot", "gazeth"]}, {"root": "kiltat", "base": "hide", "third": "hides", "past": "hid", "ing": "hiding", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral"], "label": "to hide (something)"}, {"root": "kilt", "base": "hide", "third": "hides", "past": "hid", "ing": "hiding", "objects": [], "label": "to hide (yourself)"}, {"root": "makos", "base": "build", "third": "builds", "past": "built", "ing": "building", "objects": ["vant", "wim", "wimvant", "wimton", "burmar"]}, {"root": "makot", "base": "break", "third": "breaks", "past": "broke", "ing": "breaking", "objects": ["vant", "wim", "wimvant", "wimton", "klis", "conto", "vakrist", "burmar", "seno"]}, {"root": "vantak", "base": "open", "third": "opens", "past": "opened", "ing": "opening", "objects": ["vant", "lexmer", "letlex"]}, {"root": "vantam", "base": "close", "third": "closes", "past": "closed", "ing": "closing", "objects": ["vant", "lexmer"]}, {"root": "dovel", "base": "make", "third": "makes", "past": "made", "ing": "making", "objects": ["klis", "vakorkrev", "vakrist", "conto", "burmar", "hidash", "tonder", "brosk", "yogpur", "grenu"]}, {"root": "posel", "base": "send", "third": "sends", "past": "sent", "ing": "sending", "objects": ["letlex", "lexmer", "nesh", "grenu", "vakrist", "shodaral", "krevton"]}, {"root": "motrened", "base": "drive", "third": "drives", "past": "drove", "ing": "driving", "objects": ["motren"]}, {"root": "denu", "base": "hear", "third": "hears", "past": "heard", "ing": "hearing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "zeval"], "stative": true}, {"root": "locat", "base": "look at", "third": "looks at", "past": "looked at", "ing": "looking at", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "vant", "wim", "wimvant", "wimton", "vrek", "zeval", "regaskesh"]}, {"root": "gustat", "base": "taste", "third": "tastes", "past": "tasted", "ing": "tasting", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur"]}, {"root": "nazued", "base": "smell", "third": "smells", "past": "smelled", "ing": "smelling", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "flar", "vidru"], "stative": true}, {"root": "dermuked", "base": "wound", "third": "wounds", "past": "wounded", "ing": "wounding", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "zeval"]}, {"root": "mentam", "base": "choose", "third": "chooses", "past": "chose", "ing": "choosing", "objects": ["lexmer", "letlex", "klis", "vakorkrev", "vakrist", "conto", "hidash", "tonder", "korath", "vreker", "kranregas", "shodar", "shodaral", "nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur", "vant", "wim", "wimvant", "wimton"]}, {"root": "kamed", "base": "lodge", "third": "lodges", "past": "lodged", "ing": "lodging", "objects": ["tergrama", "tergrami", "frevet", "dervet", "krevton", "belasa", "belasi"]}, {"root": "rushak", "base": "enter", "third": "enters", "past": "entered", "ing": "entering", "objects": ["vant", "wim", "wimvant", "wimton", "kam", "metren", "grasolkam", "silven"]}, {"root": "runak", "base": "leave", "third": "leaves", "past": "left", "ing": "leaving", "objects": ["vant", "wim", "wimvant", "wimton", "kam", "metren", "grasolkam", "silven"]}, {"root": "tavro", "base": "cook", "third": "cooks", "past": "cooked", "ing": "cooking", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur"]}, {"root": "neshat", "base": "eat", "third": "eats", "past": "ate", "ing": "eating", "objects": ["nesh", "grenu", "yognesh", "shel", "brosk", "kasa", "rota", "vreknesh", "ternesh", "purnesh", "yogpur"], "label": "to eat (something)"}, {"root": "neshan", "base": "eat", "third": "eats", "past": "ate", "ing": "eating", "objects": [], "label": "to eat (a meal)"}, {"root": "purashed", "base": "drink", "third": "drinks", "past": "drank", "ing": "drinking", "objects": ["purash", "brosk"]}, {"root": "neshed", "base": "feed", "third": "feeds", "past": "fed", "ing": "feeding", "objects": ["bana", "bani", "lumangetash", "getash", "konselal", "zeval", "grasolveton", "krevton"]}, {"root": "purashat", "base": "wash", "third": "washes", "past": "washed", "ing": "washing", "objects": ["bana", "bani", "hidash", "conto", "burmar"]}, {"root": "letiv", "base": "write", "third": "writes", "past": "wrote", "ing": "writing", "objects": ["lexmer", "letlex", "senit", "lex"]}, {"root": "locan", "base": "read", "third": "reads", "past": "read", "ing": "reading", "objects": ["lexmer", "letlex"]}, {"root": "kanat", "base": "teach", "third": "teaches", "past": "taught", "ing": "teaching", "objects": ["bana", "bani", "lumanbana", "lumanbani", "krevton"]}, {"root": "kanan", "base": "learn", "third": "learns", "past": "learned", "ing": "learning", "objects": ["volosum", "senit", "lex"]}, {"root": "tonked", "base": "protect", "third": "protects", "past": "protected", "ing": "protecting", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "wimvant", "wimton", "kranregas"]}, {"root": "fenat", "base": "betray", "third": "betrays", "past": "betrayed", "ing": "betraying", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal"]}, {"root": "vivav", "base": "kill", "third": "kills", "past": "killed", "ing": "killing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "zeval"]}, {"root": "krevat", "base": "attack", "third": "attacks", "past": "attacked", "ing": "attacking", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal", "vant", "wim", "wimvant", "wimton"]}, {"root": "krevan", "base": "defend", "third": "defends", "past": "defended", "ing": "defending", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "vant", "wim", "wimvant", "wimton"]}, {"root": "volat", "base": "tell", "third": "tells", "past": "told", "ing": "telling", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal", "volosum"]}, {"root": "kesat", "base": "ask", "third": "asks", "past": "asked", "ing": "asking", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani", "lumangetash", "getash", "konselal"]}, {"root": "kolat", "base": "call", "third": "calls", "past": "called", "ing": "calling", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "bana", "bani"]}, {"root": "chalat", "base": "follow", "third": "follows", "past": "followed", "ing": "following", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "lumangetash", "getash", "konselal"]}, {"root": "cholo", "base": "chase", "third": "chases", "past": "chased", "ing": "chasing", "objects": ["dervet", "frevet", "betala", "betali", "lumana", "lumani", "lumanbana", "lumanbani", "hanta", "hanti", "belasa", "belasi", "vorima", "vorimi", "veton", "tergrama", "tergrami", "regasa", "regasi", "krevton", "kranveton", "regasveton", "fenveton", "voshakveton", "grasolveton", "zeval"]}, {"root": "volan", "base": "speak", "third": "speaks", "past": "spoke", "ing": "speaking", "objects": []}, {"root": "kesan", "base": "answer", "third": "answers", "past": "answered", "ing": "answering", "objects": []}, {"root": "senod", "base": "promise", "third": "promises", "past": "promised", "ing": "promising", "objects": []}, {"root": "mentu", "base": "think", "third": "thinks", "past": "thought", "ing": "thinking", "objects": []}, {"root": "mentak", "base": "decide", "third": "decides", "past": "decided", "ing": "deciding", "objects": []}, {"root": "vived", "base": "live", "third": "lives", "past": "lived", "ing": "living", "objects": []}, {"root": "vivosed", "base": "survive", "third": "survives", "past": "survived", "ing": "surviving", "objects": []}, {"root": "vivoted", "base": "die", "third": "dies", "past": "died", "ing": "dying", "objects": []}, {"root": "kreved", "base": "fight", "third": "fights", "past": "fought", "ing": "fighting", "objects": []}, {"root": "vosham", "base": "surrender", "third": "surrenders", "past": "surrendered", "ing": "surrendering", "objects": []}, {"root": "voshak", "base": "rise up", "third": "rises up", "past": "rose up", "ing": "rising up", "objects": []}, {"root": "regased", "base": "rule", "third": "rules", "past": "ruled", "ing": "ruling", "objects": []}, {"root": "sheled", "base": "fish", "third": "fishes", "past": "fished", "ing": "fishing", "objects": []}, {"root": "splet", "base": "go", "third": "goes", "past": "went", "ing": "going", "objects": []}, {"root": "licar", "base": "come", "third": "comes", "past": "came", "ing": "coming", "objects": []}, {"root": "wedak", "base": "arrive", "third": "arrives", "past": "arrived", "ing": "arriving", "objects": []}, {"root": "wedam", "base": "leave", "third": "leaves", "past": "left", "ing": "leaving", "objects": []}, {"root": "katulas", "base": "return", "third": "returns", "past": "returned", "ing": "returning", "objects": []}, {"root": "rulit", "base": "run", "third": "runs", "past": "ran", "ing": "running", "objects": []}, {"root": "shomat", "base": "walk", "third": "walks", "past": "walked", "ing": "walking", "objects": []}, {"root": "culos", "base": "climb", "third": "climbs", "past": "climbed", "ing": "climbing", "objects": []}, {"root": "culot", "base": "fall", "third": "falls", "past": "fell", "ing": "falling", "objects": []}, {"root": "zumek", "base": "jump", "third": "jumps", "past": "jumped", "ing": "jumping", "objects": []}, {"root": "fre", "base": "flee", "third": "flees", "past": "fled", "ing": "fleeing", "objects": []}, {"root": "freduv", "base": "escape", "third": "escapes", "past": "escaped", "ing": "escaping", "objects": []}, {"root": "kesh", "base": "sit", "third": "sits", "past": "sat", "ing": "sitting", "objects": []}, {"root": "somnam", "base": "sleep", "third": "sleeps", "past": "slept", "ing": "sleeping", "objects": []}, {"root": "somnak", "base": "wake", "third": "wakes", "past": "woke", "ing": "waking", "objects": []}, {"root": "torvot", "base": "grieve", "third": "grieves", "past": "grieved", "ing": "grieving", "objects": []}, {"root": "torvos", "base": "rejoice", "third": "rejoices", "past": "rejoiced", "ing": "rejoicing", "objects": []}, {"root": "krosh", "base": "shout", "third": "shouts", "past": "shouted", "ing": "shouting", "objects": []}, {"root": "tivsh", "base": "whisper", "third": "whispers", "past": "whispered", "ing": "whispering", "objects": []}];
+
+/* =========================================================
+   Suffix Explorer — every entry is a real, already-locked word
+   ========================================================= */
+const SUFFIX_DATA = [
+  {tag:"-at", desc:"aims an action at one specific person or thing", words:[
+    {root:"kes", rootGloss:"ask/answer", result:"kesat", meaning:"to ask"},
+    {root:"vol", rootGloss:"speech", result:"volat", meaning:"to tell"},
+    {root:"nesh", rootGloss:"food", result:"neshat", meaning:"to eat (a specific food)"},
+    {root:"krev", rootGloss:"conflict", result:"krevat", meaning:"to attack"},
+    {root:"gust", rootGloss:"taste", result:"gustat", meaning:"to taste (a thing)"}
+  ]},
+  {tag:"-os", desc:"the good or wanted side of a pair", words:[
+    {root:"viv", rootGloss:"life", result:"vivos", meaning:"alive"},
+    {root:"krev", rootGloss:"conflict", result:"krevos", meaning:"peace"},
+    {root:"vol", rootGloss:"speech", result:"volos", meaning:"true"},
+    {root:"kar", rootGloss:"care", result:"karos", meaning:"to love"},
+    {root:"mer", rootGloss:"quantity", result:"meros", meaning:"many"},
+    {root:"gam", rootGloss:"worth", result:"gamos", meaning:"good"}
+  ]},
+  {tag:"-ot", desc:"the bad or unwanted side of a pair", words:[
+    {root:"viv", rootGloss:"life", result:"vivot", meaning:"dead"},
+    {root:"krev", rootGloss:"conflict", result:"krevot", meaning:"war"},
+    {root:"vol", rootGloss:"speech", result:"volot", meaning:"false"},
+    {root:"kar", rootGloss:"care", result:"karot", meaning:"to hate"},
+    {root:"mer", rootGloss:"quantity", result:"merot", meaning:"few"},
+    {root:"gam", rootGloss:"worth", result:"gamot", meaning:"bad"}
+  ]},
+  {tag:"-an", desc:"a general action, not aimed at anyone in particular", words:[
+    {root:"kes", rootGloss:"ask/answer", result:"kesan", meaning:"to answer"},
+    {root:"vol", rootGloss:"speech", result:"volan", meaning:"to speak"},
+    {root:"nesh", rootGloss:"food", result:"neshan", meaning:"to dine"},
+    {root:"krev", rootGloss:"conflict", result:"krevan", meaning:"to defend"}
+  ]},
+  {tag:"-ol", desc:"holding something without moving it", words:[
+    {root:"gras", rootGloss:"grip", result:"grasol", meaning:"to hold"}
+  ]},
+  {tag:"-il", desc:"holding something while moving it", words:[
+    {root:"gras", rootGloss:"grip", result:"grasil", meaning:"to carry"}
+  ]},
+  {tag:"-ak", desc:"starts or opens something", words:[
+    {root:"vant", rootGloss:"door", result:"vantak", meaning:"to open"},
+    {root:"wed", rootGloss:"arrival", result:"wedak", meaning:"to arrive"},
+    {root:"somn", rootGloss:"rest", result:"somnak", meaning:"to wake"},
+    {root:"klis", rootGloss:"key", result:"klisak", meaning:"to unlock"},
+    {root:"vosh", rootGloss:"drop", result:"voshak", meaning:"to rise up"}
+  ]},
+  {tag:"-am", desc:"ends or closes something", words:[
+    {root:"vant", rootGloss:"door", result:"vantam", meaning:"to close"},
+    {root:"wed", rootGloss:"arrival", result:"wedam", meaning:"to leave"},
+    {root:"somn", rootGloss:"rest", result:"somnam", meaning:"to sleep"},
+    {root:"klis", rootGloss:"key", result:"klisam", meaning:"to lock"},
+    {root:"vosh", rootGloss:"drop", result:"vosham", meaning:"to surrender"}
+  ]},
+  {tag:"-av", desc:"causes harm or damage", words:[
+    {root:"ker", rootGloss:"cutting", result:"kerav", meaning:"to cut"},
+    {root:"flar", rootGloss:"fire", result:"flarav", meaning:"to burn"},
+    {root:"viv", rootGloss:"life", result:"vivav", meaning:"to kill"}
+  ]},
+  {tag:"-d / -ed", desc:"turns a thing into an action, e.g. blood becomes to bleed", words:[
+    {root:"vidru", rootGloss:"blood", result:"vidrued", meaning:"to bleed"},
+    {root:"nazu", rootGloss:"nose", result:"nazued", meaning:"to smell"},
+    {root:"kam", rootGloss:"room", result:"kamed", meaning:"to lodge someone"},
+    {root:"grimu", rootGloss:"dirty", result:"grimud", meaning:"to dirty"},
+    {root:"motren", rootGloss:"vehicle", result:"motrened", meaning:"to drive"},
+    {root:"zovar", rootGloss:"sacred", result:"zovard", meaning:"to sanctify"},
+    {root:"shel", rootGloss:"fish", result:"sheled", meaning:"to fish"},
+    {root:"viv", rootGloss:"life", result:"vived", meaning:"to live"},
+    {root:"let", rootGloss:"hand", result:"leted", meaning:"to hand over"},
+    {root:"flar", rootGloss:"fire", result:"flared", meaning:"to ignite"}
+  ]},
+  {tag:"-ek", desc:"shows movement", words:[
+    {root:"zum", rootGloss:"upward", result:"zumek", meaning:"to jump"}
+  ]},
+  {tag:"-iv", desc:"an action done using a body part, like a hand or foot", words:[
+    {root:"kran", rootGloss:"head", result:"kraniv", meaning:"to nod"},
+    {root:"vakor", rootGloss:"arm", result:"vakoriv", meaning:"to hug"},
+    {root:"tigen", rootGloss:"finger", result:"tigeniv", meaning:"to point"},
+    {root:"volish", rootGloss:"mouth", result:"volishiv", meaning:"to kiss"},
+    {root:"pel", rootGloss:"foot", result:"peliv", meaning:"to kick"},
+    {root:"let", rootGloss:"hand", result:"letiv", meaning:"to write"}
+  ]},
+  {tag:"-uk", desc:"damage to the surface of something", words:[
+    {root:"derm", rootGloss:"skin", result:"dermuk", meaning:"a wound"}
+  ]},
+  {tag:"-ish", desc:"names the body part used for a sense, like sight or hearing", words:[
+    {root:"loc", rootGloss:"see", result:"locish", meaning:"eye"},
+    {root:"denu", rootGloss:"hear", result:"denish", meaning:"ear"},
+    {root:"vol", rootGloss:"speech", result:"volish", meaning:"mouth"},
+    {root:"kar", rootGloss:"care", result:"karish", meaning:"heart"}
+  ]},
+  {tag:"-iz", desc:"the bigger, stronger version of a quality", words:[
+    {root:"mak", rootGloss:"build/break", result:"makiz", meaning:"whole"},
+    {root:"yold", rootGloss:"magnitude", result:"yoldiz", meaning:"big"},
+    {root:"dreb", rootGloss:"weight", result:"drebiz", meaning:"heavy"},
+    {root:"spal", rootGloss:"width", result:"spaliz", meaning:"wide"},
+    {root:"vigor", rootGloss:"power", result:"vigoriz", meaning:"strong"},
+    {root:"rendu", rootGloss:"speed", result:"rendiz", meaning:"fast"},
+    {root:"zum", rootGloss:"upward", result:"zumiz", meaning:"tall"},
+    {root:"firm", rootGloss:"rigidity", result:"firmiz", meaning:"hard"},
+    {root:"yent", rootGloss:"temperature", result:"yentiz", meaning:"hot"},
+    {root:"vrek", rootGloss:"tree/growth", result:"vrekiz", meaning:"thriving"},
+    {root:"jalash", rootGloss:"hunger", result:"jalashiz", meaning:"hungry"}
+  ]},
+  {tag:"-uz", desc:"the smaller, weaker version of a quality", words:[
+    {root:"mak", rootGloss:"build/break", result:"makuz", meaning:"broken"},
+    {root:"yold", rootGloss:"magnitude", result:"yolduz", meaning:"small"},
+    {root:"dreb", rootGloss:"weight", result:"drebuz", meaning:"light (weight)"},
+    {root:"spal", rootGloss:"width", result:"spaluz", meaning:"narrow"},
+    {root:"vigor", rootGloss:"power", result:"vigoruz", meaning:"weak"},
+    {root:"rendu", rootGloss:"speed", result:"renduz", meaning:"slow"},
+    {root:"zum", rootGloss:"upward", result:"zumuz", meaning:"short"},
+    {root:"firm", rootGloss:"rigidity", result:"firmuz", meaning:"soft"},
+    {root:"yent", rootGloss:"temperature", result:"yentuz", meaning:"cold"},
+    {root:"vrek", rootGloss:"tree/growth", result:"vrekuz", meaning:"withered"},
+    {root:"jalash", rootGloss:"hunger", result:"jalashuz", meaning:"no longer hungry"}
+  ]},
+  {tag:"-esh", desc:"describes a state that has no opposite", words:[
+    {root:"kilt", rootGloss:"hide", result:"kiltesh", meaning:"hidden"},
+    {root:"kiltat", rootGloss:"hide (directed)", result:"kiltatesh", meaning:"secret"},
+    {root:"fidos", rootGloss:"trust", result:"fidesh", meaning:"loyal"},
+    {root:"spenot", rootGloss:"fear", result:"spenotesh", meaning:"dangerous"},
+    {root:"bren", rootGloss:"anger", result:"brenesh", meaning:"angry"},
+    {root:"torvot", rootGloss:"grief", result:"torvotesh", meaning:"sad"},
+    {root:"somn", rootGloss:"rest", result:"somnesh", meaning:"asleep"},
+    {root:"kesh", rootGloss:"sit", result:"keshesh", meaning:"seated"},
+    {root:"gustan", rootGloss:"taste", result:"gustesh", meaning:"tasty"}
+  ]},
+  {tag:"-um", desc:"turns a quality into a noun, e.g. safe becomes safety", words:[
+    {root:"tonk", rootGloss:"safe", result:"tonkum", meaning:"safety"},
+    {root:"volos", rootGloss:"true", result:"volosum", meaning:"truth"},
+    {root:"fidesh", rootGloss:"loyal", result:"fideshum", meaning:"loyalty"},
+    {root:"spenot", rootGloss:"fear", result:"spenotum", meaning:"fear (noun)"},
+    {root:"spenos", rootGloss:"hope", result:"spenosum", meaning:"hope (noun)"},
+    {root:"yentiz", rootGloss:"hot", result:"yentizum", meaning:"heat"},
+    {root:"firmiz", rootGloss:"hard", result:"firmizum", meaning:"hardness"},
+    {root:"firmuz", rootGloss:"soft", result:"firmuzum", meaning:"softness"},
+    {root:"yentuz", rootGloss:"cold", result:"yentuzum", meaning:"coldness"}
+  ]},
+  {tag:"-ar", desc:"turns a quality into how something is done, e.g. fast becomes quickly", words:[
+    {root:"rendiz", rootGloss:"fast", result:"rendizar", meaning:"quickly"},
+    {root:"renduz", rootGloss:"slow", result:"renduzar", meaning:"slowly"},
+    {root:"krosh", rootGloss:"shout", result:"kroshar", meaning:"loudly"},
+    {root:"tivsh", rootGloss:"whisper", result:"tivshar", meaning:"quietly"},
+    {root:"vigoriz", rootGloss:"strong", result:"vigorizar", meaning:"strongly"},
+    {root:"yentiz", rootGloss:"hot", result:"yentizar", meaning:"hotly"}
+  ]},
+  {tag:"-em / -m", desc:"names an activity, e.g. fish becomes fishing", words:[
+    {root:"shel", rootGloss:"fish", result:"shelem", meaning:"fishing"},
+    {root:"rulit", rootGloss:"run", result:"rulitem", meaning:"running"},
+    {root:"zumek", rootGloss:"jump", result:"zumekem", meaning:"jumping"},
+    {root:"fre", rootGloss:"flee", result:"frem", meaning:"fleeing"},
+    {root:"tavro", rootGloss:"cook", result:"tavrom", meaning:"cooking"}
+  ]}
+];
+
+const suffixSelect = document.getElementById('suffixSelect');
+const suffixWordSelect = document.getElementById('suffixWordSelect');
+const suffixOutput = document.getElementById('suffixOutput');
+
+SUFFIX_DATA.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${s.tag} — ${s.desc}`; suffixSelect.appendChild(o); });
+
+function populateSuffixWords(){
+  const suffix = SUFFIX_DATA[suffixSelect.value];
+  suffixWordSelect.innerHTML = '';
+  suffix.words.forEach((w,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=w.result; suffixWordSelect.appendChild(o); });
+  renderSuffixOutput();
+}
+function renderSuffixOutput(){
+  const suffix = SUFFIX_DATA[suffixSelect.value];
+  const word = suffix.words[suffixWordSelect.value];
+  suffixOutput.innerHTML = `<div class="wb-word">${word.result}</div><div class="wb-meaning">${word.meaning}<br><span style="opacity:0.7;">${word.root} (${word.rootGloss}) + ${suffix.tag}</span></div>`;
+}
+suffixSelect.addEventListener('change', populateSuffixWords);
+suffixWordSelect.addEventListener('change', renderSuffixOutput);
+populateSuffixWords();
+
+/* =========================================================
+   Tense Explorer — who, what they do, and what it is done to.
+   Each verb only offers objects that make sense with it.
+   ========================================================= */
+const tensePronounSelect = document.getElementById('tensePronounSelect');
+const tenseVerbSelect = document.getElementById('tenseVerbSelect');
+const tenseObjectSelect = document.getElementById('tenseObjectSelect');
+const tenseNotSelect = document.getElementById('tenseNotSelect');
+const tenseOutput = document.getElementById('tenseOutput');
+
+PRONOUNS.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=p.eng; tensePronounSelect.appendChild(o); });
+BUILDER_VERBS.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=v.label || `to ${v.base}`; tenseVerbSelect.appendChild(o); });
+
+function populateObjects(){
+  const verb = BUILDER_VERBS[tenseVerbSelect.value];
+  tenseObjectSelect.innerHTML = '';
+  if(!verb.objects.length){ tenseObjectSelect.style.display='none'; return; }
+  tenseObjectSelect.style.display='';
+  verb.objects.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=SENTENCE_OBJECTS[k].label; tenseObjectSelect.appendChild(o); });
+}
+
+function englishVerb(pronoun, forms, tenseKey, ongoing, neg){
+  const subj = pronoun.eng;
+  if(neg){
+    if(ongoing){
+      let aux = pronoun.third ? "is" : (subj==="I" ? "am" : "are");
+      if(tenseKey==="past") aux = (pronoun.third || subj==="I") ? "was" : "were";
+      if(tenseKey==="future") return `will not be ${forms.ing}`;
+      return `${aux} not ${forms.ing}`;
+    }
+    if(tenseKey==="present") return `${pronoun.third ? "does" : "do"} not ${forms.base}`;
+    if(tenseKey==="past") return `did not ${forms.base}`;
+    return `will not ${forms.base}`;
+  }
+  if(ongoing){
+    let aux = pronoun.third ? "is" : (subj==="I" ? "am" : "are");
+    if(tenseKey==="past") aux = (pronoun.third || subj==="I") ? "was" : "were";
+    if(tenseKey==="future") aux = "will be";
+    return `${aux} ${forms.ing}`;
+  }
+  if(tenseKey==="present") return pronoun.third ? forms.third : forms.base;
+  if(tenseKey==="past") return forms.past;
+  return `will ${forms.base}`;
+}
+
+function buildTense(pronoun, verb, obj, tenseKey, ongoing, forms, useIdiom){
+  const neg = tenseNotSelect.value==='1';
+  const particle = tenseKey==="past" ? "ik" : tenseKey==="future" ? "un" : "";
+  const parts = [];
+  if(particle) parts.push(particle);
+  if(neg) parts.push("nopa");
+  if(ongoing) parts.push("im");
+  parts.push(verb.root, pronoun.sol);
+  if(obj) parts.push(obj.sol);
+  const sol = parts.join(" ").replace(/^./,c=>c.toUpperCase()) + ".";
+  const subj = pronoun.eng.charAt(0).toUpperCase()+pronoun.eng.slice(1);
+  // "im" + an idiom verb reads as the plain present of its new meaning (im oltard = remember)
+  const verbEng = useIdiom ? (neg ? `${pronoun.third ? 'does' : 'do'} not ${forms.base}` : (pronoun.third ? forms.third : forms.base)) : englishVerb(pronoun, forms, tenseKey, ongoing, neg);
+  const eng = `${subj} ${verbEng}${obj ? " "+obj.eng : ""}.`;
+  return {sol, eng};
+}
+
+function renderTenseGrid(){
+  const pronoun = PRONOUNS[tensePronounSelect.value];
+  const verb = BUILDER_VERBS[tenseVerbSelect.value];
+  const obj = verb.objects.length ? SENTENCE_OBJECTS[tenseObjectSelect.value] : null;
+
+  const rows = [
+    {label:"Present", ...buildTense(pronoun, verb, obj, "present", false, verb)},
+    {label:"Past", ...buildTense(pronoun, verb, obj, "past", false, verb)},
+    {label:"Future", ...buildTense(pronoun, verb, obj, "future", false, verb)}
+  ];
+  if(!verb.stative){
+    const neg = tenseNotSelect.value==='1';
+    const sol = (neg ? 'Nopa '+verb.root : verb.root.charAt(0).toUpperCase()+verb.root.slice(1)) + (obj ? ' '+obj.sol : '') + '!';
+    const base = verb.base.charAt(0).toUpperCase()+verb.base.slice(1);
+    const eng = (neg ? "Don't "+verb.base : base) + (obj ? ' '+obj.eng : '') + '!';
+    rows.push({label:"Order", sol, eng});
+  }
+  if(verb.idiom){
+    rows.push({label:`With im: ${verb.idiom.base}`, ...buildTense(pronoun, verb, obj, "present", true, verb.idiom, true)});
+  } else if(!verb.stative){
+    rows.push({label:"Ongoing (now)", ...buildTense(pronoun, verb, obj, "present", true, verb)});
+  }
+
+  let html = `<div class="tense-grid">` + rows.map(r=>
+    `<div class="tense-box"><div class="tense-box-label">${r.label}</div><div class="wb-word" style="font-size:1.15rem;">${r.sol}</div><div class="wb-meaning">${r.eng}</div></div>`
+  ).join('') + `</div>`;
+  if(verb.idiom){
+    html += `<p class="wb-note" style="margin-top:0.8rem;">With <b>im</b> in front, <b>${verb.root}</b> no longer means "${verb.base}". It becomes "${verb.idiom.base}".</p>`;
+  } else if(verb.stative){
+    html += `<p class="wb-note" style="margin-top:0.8rem;">"To ${verb.base}" describes a state rather than something you do, so it doesn't take <b>im</b>.</p>`;
+  }
+  tenseOutput.innerHTML = html;
+}
+tensePronounSelect.addEventListener('change', renderTenseGrid);
+tenseVerbSelect.addEventListener('change', ()=>{ populateObjects(); renderTenseGrid(); });
+tenseObjectSelect.addEventListener('change', renderTenseGrid);
+tenseNotSelect.addEventListener('change', renderTenseGrid);
+populateObjects();
+renderTenseGrid();
+
+
+/* Datapad flicker text cycling */
+const flickerLines = ["&gt; root.load()_","&gt; suffix.attach()_","&gt; word.compile()_","&gt; solari.exe running_"];
+let flickerIdx = 0;
+setInterval(()=>{
+  flickerIdx = (flickerIdx+1)%flickerLines.length;
+  document.getElementById('datapadFlicker').innerHTML = flickerLines[flickerIdx];
+}, 2200);
+</script>
+</body>
+</html>
