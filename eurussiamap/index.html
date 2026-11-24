@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Map of Eurussia</title>
+<style>
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrains Mono');
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  #stage {
+    position: fixed;
+    inset: 0;
+    background: #000;
+  }
+
+  .view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .view.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* PHOENIX DIRECTORY VIEW (Central Eurussia — Places of Interest) */
+  #phoenix-directory-view {
+    display: block;
+    overflow-y: auto;
+    background: #000000;
+  }
+
+  #phoenix-directory-view .pd-page {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4.5rem 1.75rem 6rem;
+  }
+
+  #phoenix-directory-view .pd-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #E28FD4;
+    margin: 0 0 0.9rem;
+  }
+
+  #phoenix-directory-view h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 3rem;
+    color: #FFFFFF;
+  }
+
+  #phoenix-directory-view .pd-box {
+    border-bottom: 1px solid rgba(206, 118, 188, 0.14);
+  }
+
+  #phoenix-directory-view .pd-box-head {
+    width: 100%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1.7rem 0;
+    margin: 0 -0.1rem;
+    padding-left: 0.1rem;
+    padding-right: 0.1rem;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #phoenix-directory-view .pd-box:first-of-type .pd-box-head { padding-top: 1.2rem; }
+
+  #phoenix-directory-view .pd-box-icon {
+    margin-left: auto;
+    color: #E28FD4;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: transform 0.3s ease;
+  }
+
+  #phoenix-directory-view .pd-box.active .pd-box-head {
+    background: rgba(226, 143, 212, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(226, 143, 212, 0.35), 0 0 14px rgba(226, 143, 212, 0.25);
+  }
+
+  #phoenix-directory-view .pd-box.active .pd-box-icon {
+    transform: rotate(45deg);
+  }
+
+  #phoenix-directory-view .pd-box-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 0.1rem;
+  }
+
+  #phoenix-directory-view .pd-box.active .pd-box-body {
+    max-height: 420px;
+    padding: 0 0.1rem 1.6rem;
+  }
+
+  #phoenix-directory-view .pd-entry-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #B15FA3;
+    letter-spacing: 0.05em;
+  }
+
+  #phoenix-directory-view .pd-entry-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #E28FD4;
+  }
+
+  #phoenix-directory-view .pd-entry-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: #D6D2D4;
+    font-weight: 400;
+    max-width: 62ch;
+  }
+
+  #phoenix-directory-view .pd-nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-top: 3rem;
+  }
+
+  #phoenix-directory-view .pd-nav-btn {
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(6px);
+    border: 1px solid #E28FD4;
+    color: #E28FD4;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    padding: 0.6rem 0;
+    width: 9.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  #phoenix-directory-view .pd-nav-btn:hover {
+    background: #E28FD4;
+    color: #000000;
+  }
+
+  #phoenix-directory-view .pd-return-link {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    color: rgba(233, 228, 226, 0.35);
+    text-decoration: none;
+    z-index: 5;
+  }
+
+  @media (max-width: 600px) {
+    #phoenix-directory-view h1 { font-size: 3rem; }
+    #phoenix-directory-view .pd-page { padding: 3.5rem 1.25rem 6rem; }
+  }
+
+  /* GREENTOWN DIRECTORY VIEW (Western Eurussia — Places of Interest) */
+  #greentown-directory-view {
+    display: block;
+    overflow-y: auto;
+    background: #000000;
+  }
+
+  #greentown-directory-view .pd-page {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4.5rem 1.75rem 6rem;
+  }
+
+  #greentown-directory-view .pd-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #8FD49A;
+    margin: 0 0 0.9rem;
+  }
+
+  #greentown-directory-view h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 3rem;
+    color: #FFFFFF;
+  }
+
+  #greentown-directory-view .pd-box {
+    border-bottom: 1px solid rgba(143, 212, 154, 0.14);
+  }
+
+  #greentown-directory-view .pd-box-head {
+    width: 100%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1.7rem 0.1rem;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #greentown-directory-view .pd-box:first-of-type .pd-box-head { padding-top: 1.2rem; }
+
+  #greentown-directory-view .pd-box-icon {
+    margin-left: auto;
+    color: #8FD49A;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: transform 0.3s ease;
+  }
+
+  #greentown-directory-view .pd-box.active .pd-box-head {
+    background: rgba(143, 212, 154, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(143, 212, 154, 0.35), 0 0 14px rgba(143, 212, 154, 0.25);
+  }
+
+  #greentown-directory-view .pd-box.active .pd-box-icon {
+    transform: rotate(45deg);
+  }
+
+  #greentown-directory-view .pd-box-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 0.1rem;
+  }
+
+  #greentown-directory-view .pd-box.active .pd-box-body {
+    max-height: 420px;
+    padding: 0 0.1rem 1.6rem;
+  }
+
+  #greentown-directory-view .pd-entry-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #5FA36C;
+    letter-spacing: 0.05em;
+  }
+
+  #greentown-directory-view .pd-entry-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8FD49A;
+  }
+
+  #greentown-directory-view .pd-entry-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: #D6D2D4;
+    font-weight: 400;
+    max-width: 62ch;
+  }
+
+  #greentown-directory-view .pd-nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-top: 3rem;
+  }
+
+  #greentown-directory-view .pd-nav-btn {
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(6px);
+    border: 1px solid #8FD49A;
+    color: #8FD49A;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    padding: 0.6rem 0;
+    width: 9.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  #greentown-directory-view .pd-nav-btn:hover {
+    background: #8FD49A;
+    color: #000000;
+  }
+
+  #greentown-directory-view .pd-return-link {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    color: rgba(233, 228, 226, 0.35);
+    text-decoration: none;
+    z-index: 5;
+  }
+
+  @media (max-width: 600px) {
+    #greentown-directory-view h1 { font-size: 3rem; }
+    #greentown-directory-view .pd-page { padding: 3.5rem 1.25rem 6rem; }
+  }
+
+  /* KRASHNOV DIRECTORY VIEW (Eastern Eurussia — Places of Interest) */
+  #krashnov-directory-view {
+    display: block;
+    overflow-y: auto;
+    background: #000000;
+  }
+
+  #krashnov-directory-view .pd-page {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4.5rem 1.75rem 6rem;
+  }
+
+  #krashnov-directory-view .pd-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #7FB8E0;
+    margin: 0 0 0.9rem;
+  }
+
+  #krashnov-directory-view h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 3rem;
+    color: #FFFFFF;
+  }
+
+  #krashnov-directory-view .pd-box {
+    border-bottom: 1px solid rgba(127, 184, 224, 0.14);
+  }
+
+  #krashnov-directory-view .pd-box-head {
+    width: 100%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1.7rem 0.1rem;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #krashnov-directory-view .pd-box:first-of-type .pd-box-head { padding-top: 1.2rem; }
+
+  #krashnov-directory-view .pd-box-icon {
+    margin-left: auto;
+    color: #7FB8E0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: transform 0.3s ease;
+  }
+
+  #krashnov-directory-view .pd-box.active .pd-box-head {
+    background: rgba(127, 184, 224, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(127, 184, 224, 0.35), 0 0 14px rgba(127, 184, 224, 0.25);
+  }
+
+  #krashnov-directory-view .pd-box.active .pd-box-icon {
+    transform: rotate(45deg);
+  }
+
+  #krashnov-directory-view .pd-box-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 0.1rem;
+  }
+
+  #krashnov-directory-view .pd-box.active .pd-box-body {
+    max-height: 420px;
+    padding: 0 0.1rem 1.6rem;
+  }
+
+  #krashnov-directory-view .pd-entry-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #4F8DB3;
+    letter-spacing: 0.05em;
+  }
+
+  #krashnov-directory-view .pd-entry-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7FB8E0;
+  }
+
+  #krashnov-directory-view .pd-entry-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: #D6D2D4;
+    font-weight: 400;
+    max-width: 62ch;
+  }
+
+  #krashnov-directory-view .pd-nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-top: 3rem;
+  }
+
+  #krashnov-directory-view .pd-nav-btn {
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(6px);
+    border: 1px solid #7FB8E0;
+    color: #7FB8E0;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    padding: 0.6rem 0;
+    width: 9.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  #krashnov-directory-view .pd-nav-btn:hover {
+    background: #7FB8E0;
+    color: #000000;
+  }
+
+  #krashnov-directory-view .pd-return-link {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    color: rgba(233, 228, 226, 0.35);
+    text-decoration: none;
+    z-index: 5;
+  }
+
+  @media (max-width: 600px) {
+    #krashnov-directory-view h1 { font-size: 3rem; }
+    #krashnov-directory-view .pd-page { padding: 3.5rem 1.25rem 6rem; }
+  }
+
+  /* ---------- MAP VIEW ---------- */
+
+  #map-view { background: #0b0b0b; }
+  #map-frame {
+    position: relative;
+    width: 100%;
+    max-width: 100vw;
+    aspect-ratio: 1536 / 1024;
+    max-height: 100vh; max-height: 100dvh;
+  }
+
+  #map-frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  #base-map {
+    cursor: pointer;
+  }
+
+  .region-overlay {
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .region-overlay.active {
+    opacity: 1;
+  }
+
+  /* ---------- CITY VIEWS ---------- */
+
+  .city-img-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 100vw;
+    aspect-ratio: 1536 / 1024;
+    max-height: 100vh; max-height: 100dvh;
+  }
+
+  .city-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .city-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.75) 100%);
+    pointer-events: none;
+  }
+
+  .city-buttons {
+    position: absolute;
+    left: 50%;
+    bottom: 8%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  #london-locked-view .city-buttons {
+    bottom: 3%;
+  }
+
+  #phoenix-view {
+    flex-direction: column;
+  }
+
+  #phoenix-view .phoenix-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  #phoenix-view .city-buttons {
+    position: static;
+    transform: none;
+    margin-top: 1.4rem;
+  }
+
+  #greentown-view {
+    flex-direction: column;
+  }
+
+  #greentown-view .greentown-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  #greentown-view .city-buttons {
+    position: static;
+    transform: none;
+    margin-top: 1.4rem;
+  }
+
+  #krashnov-view {
+    flex-direction: column;
+  }
+
+  #krashnov-view .krashnov-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  #krashnov-view .city-buttons {
+    position: static;
+    transform: none;
+    margin-top: 1.4rem;
+  }
+
+  #london-view {
+    flex-direction: column;
+  }
+
+  #london-view .london-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  #london-view .city-buttons {
+    position: static;
+    transform: none;
+    margin-top: 1.4rem;
+  }
+
+  #london-locked-view {
+    flex-direction: column;
+  }
+
+  #london-locked-view .london-locked-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  #london-locked-view .city-buttons {
+    position: static;
+    transform: none;
+    margin-top: 1.4rem;
+    bottom: auto;
+  }
+
+  .phoenix-btn {
+    background: transparent;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    padding: 0.55rem 0;
+    width: 10rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .phoenix-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Central Eurussia buttons — purple accent */
+  #phoenix-view .phoenix-btn {
+    border-color: #E28FD4;
+    color: #E28FD4;
+  }
+
+  #phoenix-view .phoenix-btn:hover {
+    background: rgba(226, 143, 212, 0.15);
+  }
+
+  /* Krashnov (Eastern) — blue accent */
+  #krashnov-view .phoenix-btn {
+    border-color: #7FB8E0;
+    color: #7FB8E0;
+  }
+
+  #krashnov-view .phoenix-btn:hover {
+    background: rgba(127, 184, 224, 0.15);
+  }
+
+  /* Greentown (Western) — green accent */
+  #greentown-view .phoenix-btn {
+    border-color: #8FD49A;
+    color: #8FD49A;
+  }
+
+  #greentown-view .phoenix-btn:hover {
+    background: rgba(143, 212, 154, 0.15);
+  }
+
+  /* Old Republic — silver/grey accent */
+  #london-view .phoenix-btn,
+  #london-locked-view .phoenix-btn {
+    border-color: #BFBFBF;
+    color: #BFBFBF;
+  }
+
+  #london-view .phoenix-btn:hover,
+  #london-locked-view .phoenix-btn:hover {
+    background: rgba(191, 191, 191, 0.15);
+  }
+
+
+
+  .city-title{
+    position:absolute; top:7%; left:50%; transform:translateX(-50%); z-index:4; pointer-events:none;
+    font-family:'JetBrains Mono', monospace; font-weight:700; text-transform:uppercase; white-space:nowrap;
+    font-size:clamp(1.1rem, 3.4vw, 2.6rem); letter-spacing:0.22em; color:#f2efe8;
+    text-shadow:0 2px 6px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.8);
+  }
+  .city-img-wrap::before{
+    content:""; position:absolute; inset:0 0 auto 0; height:30%; z-index:3; pointer-events:none;
+    background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+  }
+  /* ===== Keep the city buttons on screen at every size ===== */
+  @media all{
+    .phoenix-stack, .greentown-stack, .krashnov-stack, .london-stack, .london-locked-stack{ position:relative; }
+    .city-buttons, #phoenix-view .city-buttons, #greentown-view .city-buttons, #krashnov-view .city-buttons, #london-view .city-buttons, #london-locked-view .city-buttons{
+      position:absolute !important; left:50% !important; bottom:7% !important; transform:translateX(-50%) !important; margin:0 !important; z-index:5;
+    }
+  }
+  /* Old Republic quarantine screen: button sits under the title, clear of the stencilled text */
+  @media all{ #london-locked-view .city-buttons{ top:19% !important; bottom:auto !important; } }
+  #london-locked-view .city-img-wrap img{ object-fit:contain; background:#000; }
+  /* ===== STANDING FIXES ===== */
+  #rotate-lock{ position:fixed; inset:0; z-index:1000; background:#0a0a0a; display:none; flex-direction:column; align-items:center; justify-content:center; gap:22px; }
+  #rotate-lock .rl-text{ font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:3px; color:#C9A24A; text-transform:uppercase; text-align:center; padding:0 24px; }
+  #rotate-lock svg{ animation:rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock{ 0%,100%{ transform:rotate(0deg); } 40%,60%{ transform:rotate(-90deg); } }
+  .wa-return{ position:fixed; right:18px; bottom:14px; z-index:60; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1.5px; color:#8c8272; text-decoration:none; outline:none; }
+  .wa-return:hover{ color:#C9A24A; }
+  @media (orientation:portrait){ #rotate-lock{ display:flex; } .wa-return{ display:none; } }
+</style>
+</head>
+<body>
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+
+  <div id="stage">
+
+    <!-- MAP VIEW -->
+    <div class="view active" id="map-view">
+      <a class="wa-return" href="https://wapublishing.co.uk" target="_top">← Return to WA Publishing</a>
+      <div id="map-frame">
+        <img id="base-map" src="image-01.webp">
+        <img class="region-overlay" id="old-republic-overlay" src="image-02.webp">
+        <img class="region-overlay" id="western-overlay" src="image-03.webp">
+        <img class="region-overlay" id="central-overlay" src="image-04.webp">
+        <img class="region-overlay" id="eastern-overlay" src="image-05.webp">
+      </div>
+    </div>
+
+    <!-- PHOENIX VIEW -->
+    <div class="view" id="phoenix-view">
+      <div class="phoenix-stack">
+      <div class="city-img-wrap">
+        <div class="city-title">Central Eurussia</div>
+        <img src="image-06.jpg">
+        <div class="city-scrim"></div>
+        </div>
+        <div class="city-buttons">
+          <button class="phoenix-btn" id="phoenix-enter-btn">Click to Enter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOENIX DIRECTORY VIEW (Central Eurussia — Places of Interest) -->
+    <div class="view" id="phoenix-directory-view">
+      <div class="pd-page">
+        <p class="pd-eyebrow">Central Eurussia</p>
+        <h1>Places of<br>Interest</h1>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">01</span><span class="pd-entry-name">Phoenix</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Phoenix is the capital of Central Eurussia and the centre of Whitfield government. The vast city is home to many of the region's most important political, military and administrative institutions. It has remained the principal seat of power in Eurussia for generations. It is best known for its scale, its importance to the Whitfield family and its position at the heart of the continent.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">02</span><span class="pd-entry-name">Whitfield Palace</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Frank Whitfield began Whitfield Palace late in his reign. Every king since has added to it. Perched on a hill above Phoenix, with the city sprawled out below, it is home to the current ruling family. Generations of Whitfields have lived and governed from within its walls, giving it a central place in the political history of Central Eurussia.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">03</span><span class="pd-entry-name">The Citadel</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Built by Damian Whitfield, the Citadel is a heavily fortified government complex within Phoenix, associated with the Chancellor and Phoenix's ruling council. Security around the site is considerably tighter than around ordinary government buildings, reflecting the importance of the people and operations housed inside it.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">04</span><span class="pd-entry-name">Parliament Tower</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Built by Frank Whitfield, Parliament Tower stands within Phoenix as the tallest building in Eurussia, its height a deliberate statement of Parliament's authority. Political representatives from across the continent gather there. Much of the formal business of national government is conducted within its chambers.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">05</span><span class="pd-entry-name">Lionel Brady's Penthouse</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">High above Phoenix sits Lionel Brady's private penthouse, an expansive residence dominated by black marble, glass and views across the capital. The property reflects Brady's wealth and position within Eurussian politics. It stands in marked contrast to the more traditional surroundings associated with the Whitfield family.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">06</span><span class="pd-entry-name">FLAME Academy</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">FLAME was founded by Frank Whitfield, whose statue still stands in the Academy's hall. Today FLAME Academy is the principal training institution of Eurussia's elite specialist military organisation. Entry standards are exceptionally high, with applicants expected to demonstrate significant potential before being accepted. The Academy is best known for producing highly trained soldiers and instructors, along with the military traditions developed there across generations.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">07</span><span class="pd-entry-name">Cybertech</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Created by Damian Whitfield, Cybertech is one of Eurussia's foremost intelligence, surveillance and technological institutions. Its work encompasses intelligence gathering, analytical systems, communications and advanced surveillance technology used throughout the continent. Its expertise has made Cybertech an important part of Eurussia's wider security infrastructure.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">08</span><span class="pd-entry-name">Armstech</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Hidden within the mountains of Central Eurussia, Armstech is a highly classified weapons-development complex. Its personnel work on advanced military technology and weapons intended for Eurussia's armed forces, with access to the facility tightly controlled. Its isolation, secrecy and restricted clearance make it one of the least accessible installations in the region.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">09</span><span class="pd-entry-name">PMC Headquarters / Soldiers of the Future</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">PMC Headquarters serves as the principal command centre of the Phoenix Military Corps, while Soldiers of the Future, founded by the PMC's commander Wilkes with King Wayne, provides the main recruitment and training route into PMC service. Together, the two facilities form an important part of the military structure supporting Central Eurussia.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">10</span><span class="pd-entry-name">Lewton Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Lewton Province occupies a strategically important position on one of the principal approaches to Phoenix. Its city is enclosed by a full wall, with a single road in and a single road out. Its proximity to the capital and strong military presence have made it one of the more heavily defended provinces surrounding the city.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">11</span><span class="pd-entry-name">Quarryton</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Quarryton is a rugged Central Eurussian town surrounded by numerous working quarries, from which both the settlement and its name originate. Stone extraction forms the backbone of the local economy and provides much of the employment and income on which the town depends. Quarryton is also one of the southernmost substantial settlements before Central Command and the Trench.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">12</span><span class="pd-entry-name">Dumbridge Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Dumbridge is a wealthy Central Eurussian province of quiet estates, removed from the density and activity of Phoenix. Its relatively low profile and unobtrusive surroundings have made it useful for discreet military activity, including the presence of a concealed FLAME safe house.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">13</span><span class="pd-entry-name">Shackleton Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Shackleton is a remote Central Eurussian province characterised by its isolation from the region's major population centres. A privately controlled storage facility operating under military clearance is located there, giving the otherwise secluded province a degree of military importance.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">14</span><span class="pd-entry-name">Clearwater Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Clearwater is an open, rain-swept province in Central Eurussia, situated away from the heavily urbanised territory surrounding Phoenix. Its roads provide important connections through this part of the region, while its exposed landscape and persistent wet weather have become defining characteristics of the province.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">15</span><span class="pd-entry-name">Wandswind Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Wandswind is a border province between Central and Eastern Eurussia, built around one of several gateway towns on the main road connecting the two regions. Most of the town faces that single road, its bars, lodging houses, fuel depots and repair yards serving the traffic passing between them. Its buildings have stood for generations and are still well maintained, though years of passing traffic and harsh weather have dulled their stonework.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">16</span><span class="pd-entry-name">Hatchet Hills</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Hatchet Hills is an autonomous province within Central Eurussia and one of the continent's more unusual political territories. It answers to no crown and maintains its own internal authority, an independence that has made it a magnet for outlaws and undesirables with nowhere else to go.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">17</span><span class="pd-entry-name">Northern Territories</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">The Northern Territories comprise the remote settlements and islands scattered across the far north of Central Eurussia. The north was once a manufacturing powerhouse, until most of its industry was drawn south into Phoenix. Distance, difficult conditions and limited access now separate many of its communities from the more populated areas farther south. They remain an important source of seafood, whale oil and other goods drawn from the northern waters.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">18</span><span class="pd-entry-name">Frostbay</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Frostbay is a remote port situated on the northern coast, separated from the Central Eurussian mainland by distance and difficult terrain. It serves as one of the principal maritime access points for the surrounding islands, with shipping and supply traffic underscoring the settlement's importance.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">19</span><span class="pd-entry-name">Starlight Port</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Starlight Port is a fortified harbour town in northern Central Eurussia, its natural defences and substantial facilities making it an important maritime location for both civilian and military traffic. It sits along the northern trade route, receiving deliveries carried up from Greenport under the escort of Greenrock's ships.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">20</span><span class="pd-entry-name">The Trench</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Dug over thirty years, the Trench is now the vast defensive chasm marking Eurussia's southern frontier, stretching across all three regions — Western, Central and Eastern Eurussia — and separating the continent's heartland from the wilds beyond. It stands as one of the most significant military installations on the continent, manned continuously by forces drawn from across Eurussia.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">21</span><span class="pd-entry-name">Central Command</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Built on the dry scrubland of the Dusty Plains south of Quarryton, Central Command is the principal hub of the Trench's Central sector, positioned at the heart of the defensive line. It coordinates operations across the surrounding stretch of the frontier and stands as one of the most vital posts along the entire Trench.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">22</span><span class="pd-entry-name">Shaddock Province</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Shaddock sprawls across flat, open land at the gateway between southern Central Eurussia and southern Western Eurussia. It is a city built for motion — assembly lines and freight yards turning out the cars, trains and rolling stock that keep the rest of the continent moving. It is the only Phoenix province governed by a Walker: Bryn Walker holds it for Phoenix, backed by a permanent PMC garrison.</p>
+
+
+          </div>
+
+
+        </div>
+
+
+        <div class="pd-nav-buttons">
+          <button class="pd-nav-btn back-to-map-btn">Back to Map</button>
+        </div>
+
+      </div>
+
+      <a class="pd-return-link" href="https://wapublishing.co.uk" target="_top">&larr; Return to WA Publishing</a>
+    </div>
+
+    <!-- KRASHNOV VIEW -->
+    <div class="view" id="krashnov-view">
+      <div class="krashnov-stack">
+      <div class="city-img-wrap">
+        <div class="city-title">Eastern Eurussia</div>
+        <img src="image-07.jpg">
+        <div class="city-scrim"></div>
+        </div>
+        <div class="city-buttons">
+          <button class="phoenix-btn" id="krashnov-enter-btn">Click to Enter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KRASHNOV DIRECTORY VIEW (Eastern Eurussia — Places of Interest) -->
+    <div class="view" id="krashnov-directory-view">
+      <div class="pd-page">
+        <p class="pd-eyebrow">Eastern Eurussia</p>
+        <h1>Places of<br>Interest</h1>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">01</span><span class="pd-entry-name">Krashnov</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Krashnov was built by Vladimir Romanov, one of the continent's three founders, in the shadow of a mountain range permanently blanketed in snow. Today it stands as a harsh, fortress-like city, home to a heavy and constant military presence overseen for generations by the Romanov family. Most of the region's actual industry lies beyond the capital itself, spread across the vassal states and provinces that answer to it.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">02</span><span class="pd-entry-name">Romanov Estate</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Located within Krashnov, Romanov Estate is the principal residence of the Romanov family. The family has lived and governed from within its walls for as long as the city has stood, giving it a central place in the political history of Eastern Eurussia.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">03</span><span class="pd-entry-name">Krashnov Province</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Krashnov Province surrounds the capital. It's here — not in Krashnov itself — that the region's real industrial sprawl lives. Factories, freight lines and the jobs that keep the east running stretch across its territory, tying the province's fortunes directly to the capital it encircles.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">04</span><span class="pd-entry-name">Slate Rock</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Slate Rock began as the mines and ironworks of Dmitri Romanov, its first governor. Today it is an Eastern Eurussian manufacturing settlement set on a plateau. The metals pulled from its ground are melted down and reforged into everything from structural framing to bullets, feeding the industry that runs the rest of the east.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">05</span><span class="pd-entry-name">Longwood</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Longwood sits surrounded by green fields and heavy woodland. It was founded to help feed Krashnov, but these days most of what it produces goes straight to the Romanovs and the K-Militia — leaving ordinary citizens waiting on shipments from Greentown instead, a pattern that's become common across many of the east's vassal states.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">06</span><span class="pd-entry-name">Suln</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Suln commands the biggest furnaces and the largest rail system in the east, with freight arriving constantly to feed them. Outside the capital, it's the next most populous province in the region. Unlike much of the east, Suln's people are Romanov loyalists through and through — one of the few provinces genuinely content with the administration.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">07</span><span class="pd-entry-name">Cedar Town</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Cedar Town began as the Orlov family's timber camp, which supplied the wood that built early Krashnov. It is now a lumber settlement, ringed by forests that seem to have no end. Its markets run huge and steady off the timber trade, making it one of the more genuinely profitable towns in the east — profitable enough to warrant a fairly sized K-Militia presence and a fortified stronghold to protect it.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">08</span><span class="pd-entry-name">Shades Reach</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Shades Reach is rebel country. Its people have never made peace with Romanov rule. Constant skirmishes with the K-Militia are a fact of life here. When dissent grows too far, the province has been razed outright — a warning the Romanovs have used more than once.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">09</span><span class="pd-entry-name">Rooks Point</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Rooks Point is the easternmost city in Eurussia, reachable only by mountain tunnels cut through the range that isolates it. Its proximity to the eastern sea has made it a fishing town at heart. Its harbour also serves as a terminal for Greentown's ships and navy.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">10</span><span class="pd-entry-name">Eastern Command</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Eastern Command is one of two hubs covering the Trench's eastern stretch. Run by Mary, it is the most isolated command post on the frontier — miles from anything, with nothing but open ground between it and the nearest settlement.</p>
+          </div>
+        </div>
+
+        <div class="pd-box">
+          <button class="pd-box-head" type="button">
+            <span class="pd-entry-num">11</span><span class="pd-entry-name">Pacific Command</span>
+            <span class="pd-box-icon">+</span>
+          </button>
+          <div class="pd-box-body">
+            <p class="pd-entry-desc">Pacific Command sits buried in jungle, the least conventional of the Trench's hubs and all the harder to approach for it. Run by Thomaz, it doubles as a watch post for Greentown's navy — the last set of eyes on anything trying to slip in off the water before it reaches the coast.</p>
+          </div>
+        </div>
+
+        <div class="pd-nav-buttons">
+          <button class="pd-nav-btn back-to-map-btn">Back to Map</button>
+        </div>
+
+      </div>
+
+      <a class="pd-return-link" href="https://wapublishing.co.uk" target="_top">&larr; Return to WA Publishing</a>
+    </div>
+
+    <!-- GREENTOWN VIEW -->
+    <div class="view" id="greentown-view">
+      <div class="greentown-stack">
+      <div class="city-img-wrap">
+        <div class="city-title">Western Eurussia</div>
+        <img src="image-08.jpg">
+        <div class="city-scrim"></div>
+        </div>
+        <div class="city-buttons">
+          <button class="phoenix-btn" id="greentown-enter-btn">Click to Enter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GREENTOWN DIRECTORY VIEW (Western Eurussia — Places of Interest) -->
+    <div class="view" id="greentown-directory-view">
+      <div class="pd-page">
+        <p class="pd-eyebrow">Western Eurussia</p>
+        <h1>Places of<br>Interest</h1>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">01</span><span class="pd-entry-name">Greentown</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Greentown began as the farms Thomas Walker set out to feed the new continent with. Today it is the capital of Western Eurussia and home to the powerful Walker family. For generations, Greentown has served as Eurussia's breadbasket. Over the years, unrest has spread across Western Eurussia's vast lands. That unrest made clear the region's need for a force of its own — one it could raise, train and rely on without waiting on Phoenix.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">02</span><span class="pd-entry-name">Walker Estate</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Walker Estate sits within Greentown and is the principal residence of the Walker family. Generations of Walkers have lived and governed from within its walls, giving it a central place in the political history of Western Eurussia.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">03</span><span class="pd-entry-name">Ember West</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Ember West is Greentown's dedicated cadet training institution, established by Luke Walker in the aftermath of the city's unrest to provide Western Eurussia with its own permanent security and training infrastructure. Its most capable cadets are known to go on to further opportunities beyond the institution itself.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">04</span><span class="pd-entry-name">Western Command</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Western Command is one of two hubs covering the Trench's western stretch, holding one of the frontier's most exposed sections. Run by Mario, it coordinates the defence of the region alongside its neighbouring Atlantic post.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">05</span><span class="pd-entry-name">Atlantic Command</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Atlantic Command watches over the westernmost waters along the Trench, run by Sammy. It forms part of the wider Western defensive network, its coastal position giving it a distinct operational character from the rest of the frontier hubs. It also holds a docking yard for Greentown's patrol boats.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">06</span><span class="pd-entry-name">Greenport</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Founded as a fishing town in Greentown's golden age, Greenport is now Western Eurussia's principal food port, the main point through which the region's grain and produce reach the rest of the continent by sea. Most of the harvest from Greentown's farmland passes through its docks, making it as vital to Eurussia's food supply as Greentown itself — a chokepoint the whole continent depends on, whether it knows it or not.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">07</span><span class="pd-entry-name">Greenrock</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Greenrock began as a fishing town. It is now the continent's main naval fortress, home to the Greentown navy. From here, its ships escort vessels from Greenport to Krashnov along the northern passage. They also patrol the sea around the Trench, with two vessels stationed near Pacific Command — a strategic position matched by nowhere else on the continent.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">08</span><span class="pd-entry-name">Ministry of Agriculture</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Created by Sebastian Walker as Greentown's land and trade grew, the Ministry of Agriculture is the central office where the protection and distribution of Western Eurussia's resources are decided. Every harvest that leaves the region's farmland passes through decisions made here before it reaches the rest of the continent.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">09</span><span class="pd-entry-name">Kilrock</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Kilrock grew up among the farms Thomas Walker spread across the west, one of the first townships of Greentown's golden age. By the end of his rule it had become a province, with his son Isaac as its first governor. Kilrock has kept to Thomas's ways ever since. It is still farming country. Its harvests now supply Central Command on the Trench.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-box">
+
+
+          <button class="pd-box-head" type="button">
+
+
+            <span class="pd-entry-num">10</span><span class="pd-entry-name">Marsh Valley</span>
+
+
+            <span class="pd-box-icon">+</span>
+
+
+          </button>
+
+
+          <div class="pd-box-body">
+
+
+            <p class="pd-entry-desc">Marsh Valley began as one of the farming towns of Greentown's golden age and grew into the west's main storage hub. When the Crimson Pact rose, the supply convoys that fed the war ran through it. It grew into a province on the back of that trade, with Gideon Walker as its first governor. During the Midwest Uprising it opened its roads to the forces sent to retake neighbouring Shaddock, taking in Shaddock's refugees. Its governor today is Rhys Walker.</p>
+
+
+          </div>
+
+
+        </div>
+
+        <div class="pd-nav-buttons">
+          <button class="pd-nav-btn back-to-map-btn">Back to Map</button>
+        </div>
+
+      </div>
+
+      <a class="pd-return-link" href="https://wapublishing.co.uk" target="_top">&larr; Return to WA Publishing</a>
+    </div>
+
+    <!-- LONDON VIEW -->
+    <div class="view" id="london-view">
+      <div class="london-stack">
+      <div class="city-img-wrap">
+        <div class="city-title">The Old Republic</div>
+        <img src="image-09.jpg">
+        <div class="city-scrim"></div>
+        </div>
+        <div class="city-buttons">
+          <button class="phoenix-btn" id="london-enter-btn">Click to Enter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LONDON LOCKED VIEW -->
+    <div class="view" id="london-locked-view">
+      <div class="london-locked-stack">
+      <div class="city-img-wrap">
+        <div class="city-title">The Old Republic</div>
+        <img src="image-10.jpg">
+        </div>
+        <div class="city-buttons">
+          <button class="phoenix-btn back-to-map-btn">Back to Map</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  const mapView = document.getElementById('map-view');
+  const phoenixView = document.getElementById('phoenix-view');
+  const krashnovView = document.getElementById('krashnov-view');
+  const greentownView = document.getElementById('greentown-view');
+  const londonView = document.getElementById('london-view');
+  const londonLockedView = document.getElementById('london-locked-view');
+  const phoenixDirectoryView = document.getElementById('phoenix-directory-view');
+  const greentownDirectoryView = document.getElementById('greentown-directory-view');
+  const krashnovDirectoryView = document.getElementById('krashnov-directory-view');
+  const allViews = [mapView, phoenixView, krashnovView, greentownView, londonView, londonLockedView, phoenixDirectoryView, greentownDirectoryView, krashnovDirectoryView];
+
+  function showView(view) {
+    allViews.forEach(v => v.classList.remove('active'));
+    view.classList.add('active');
+  }
+
+  document.querySelectorAll('.back-to-map-btn').forEach(btn => {
+    btn.addEventListener('click', () => showView(mapView));
+  });
+
+  document.getElementById('london-enter-btn').addEventListener('click', () => {
+    showView(londonLockedView);
+  });
+
+  document.getElementById('phoenix-enter-btn').addEventListener('click', () => {
+    showView(phoenixDirectoryView);
+  });
+
+  document.getElementById('greentown-enter-btn').addEventListener('click', () => {
+    showView(greentownDirectoryView);
+  });
+
+  document.getElementById('krashnov-enter-btn').addEventListener('click', () => {
+    showView(krashnovDirectoryView);
+  });
+
+  document.querySelectorAll('.pd-box-head').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const box = btn.closest('.pd-box');
+      const wasActive = box.classList.contains('active');
+      box.parentElement.querySelectorAll('.pd-box.active').forEach(b => {
+        b.classList.remove('active');
+        b.querySelector('.pd-box-head').setAttribute('aria-expanded', 'false');
+      });
+      if (!wasActive) {
+        box.classList.add('active');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  const baseMap = document.getElementById('base-map');
+  const frame = document.getElementById('map-frame');
+  const overlays = {
+    'old-republic': document.getElementById('old-republic-overlay'),
+    'western': document.getElementById('western-overlay'),
+    'central': document.getElementById('central-overlay'),
+    'eastern': document.getElementById('eastern-overlay'),
+  };
+  const regionViews = {
+    'old-republic': londonView,
+    'western': greentownView,
+    'central': phoenixView,
+    'eastern': krashnovView,
+  };
+
+  // Region map traced from the map image: 0 sea, 1 Old Republic, 2 Western, 3 Central, 4 Eastern
+  const MASK_W = 384, MASK_H = 256;
+  const MASK_NAMES = [null, 'old-republic', 'western', 'central', 'eastern'];
+  const REGION_MASK = (() => { const out = new Uint8Array(MASK_W*MASK_H); let i = 0;
+    '06788,33,0380,35,0352,34,022,35,0349,37,022,36,0348,37,023,36,0346,38,024,36,05,33,0336,36,029,35,03,35,0335,37,031,32,03,36,0249,21,01,22,01,23,077,34,02,31,035,37,0245,214,074,33,042,33,0244,217,050,34,019,33,0290,217,050,35,018,33,018,31,0273,221,045,34,018,33,018,33,026,34,03,31,0237,224,03,24,035,35,016,34,017,34,025,313,0232,227,01,24,035,35,016,34,014,37,020,32,03,314,0231,235,034,33,016,34,014,35,021,322,044,44,05,41,0176,236,031,35,05,36,06,32,014,34,022,323,041,410,01,46,0170,240,029,36,04,35,021,34,021,326,039,418,0169,242,020,31,09,36,01,36,021,34,021,327,037,418,0171,243,017,34,08,313,019,35,021,325,038,412,01,44,0172,247,014,36,05,313,020,35,09,33,010,325,037,410,0180,251,010,37,04,312,020,35,09,33,011,325,011,41,025,48,0181,252,09,37,05,311,021,35,08,34,011,324,039,41,01,44,0181,252,011,36,03,312,021,35,08,35,011,323,019,42,025,41,0180,252,012,36,01,312,011,32,010,34,07,35,04,31,02,33,02,323,020,41,024,43,0180,236,01,214,012,318,011,35,08,34,07,35,04,36,02,323,012,42,031,45,0178,236,04,210,012,318,011,35,09,34,07,35,03,38,01,323,012,42,06,41,022,46,0178,238,05,27,012,318,06,31,03,37,012,31,07,35,03,331,42,01,41,03,42,03,43,04,44,022,45,0178,239,08,22,012,320,02,313,05,31,06,34,04,36,04,329,410,02,44,03,46,020,48,01,41,03,41,0169,241,021,335,05,32,05,34,04,35,03,330,426,07,41,011,48,02,46,0166,243,023,333,04,32,05,35,04,35,03,330,427,05,43,09,48,02,48,0160,21,03,244,021,335,01,31,01,33,05,36,03,341,425,02,45,010,416,075,141,044,23,01,245,021,342,04,36,03,342,424,01,45,011,416,075,141,043,250,04,21,07,22,03,21,01,345,03,36,03,341,431,04,41,04,418,075,141,042,252,03,23,05,26,347,02,36,02,341,431,04,43,02,418,076,141,041,253,04,214,347,02,35,02,341,432,01,425,04,45,07,44,01,41,054,141,040,256,03,216,351,02,339,470,05,49,052,141,040,257,02,214,32,21,350,04,337,470,06,49,02,42,047,141,039,274,354,02,337,474,03,415,045,141,035,279,352,03,339,473,01,418,04,42,037,141,033,281,352,03,341,491,01,41,01,43,036,141,031,284,350,03,341,499,035,141,030,286,349,03,340,4100,061,12,042,287,348,03,340,4103,059,12,041,288,347,02,340,4105,0102,283,393,4106,052,11,05,12,041,284,394,4104,047,11,05,18,040,284,397,4102,046,12,04,18,041,283,398,4102,045,12,04,18,042,286,32,22,388,41,31,4104,044,11,05,16,044,290,384,4109,049,18,043,291,384,4109,043,11,05,17,044,294,378,4113,044,111,01,19,034,295,377,4105,01,47,044,121,033,296,376,4105,04,45,045,119,035,296,375,4104,056,118,035,295,376,4102,058,118,035,210,04,280,377,4101,059,117,037,28,05,276,32,22,376,4103,057,117,039,24,08,277,379,4105,055,116,053,276,379,4105,057,113,054,276,379,4104,058,113,054,275,382,4101,058,112,056,274,382,4101,057,114,01,11,049,21,04,274,381,4100,059,11,01,116,046,23,04,273,381,499,062,12,02,113,044,24,04,272,382,498,067,113,041,26,06,262,32,22,32,23,382,497,068,114,040,26,06,262,38,21,384,42,31,480,02,410,067,115,040,27,05,263,395,478,04,49,055,17,05,116,039,28,05,263,395,475,07,46,01,41,055,19,03,117,039,28,04,266,393,474,07,46,02,41,054,110,04,11,01,11,01,11,01,111,038,27,02,270,392,473,07,44,060,110,010,113,036,26,02,272,392,472,06,44,061,111,08,115,036,26,01,268,32,22,392,472,06,44,055,116,010,114,036,275,398,468,07,44,02,41,053,115,012,113,036,273,3101,458,02,47,07,44,056,114,013,114,035,273,3102,456,04,46,06,45,056,113,014,114,035,268,32,23,3102,454,07,44,06,45,056,115,013,114,035,268,3108,450,020,45,057,114,012,116,034,268,3106,452,019,47,058,111,07,11,05,116,033,266,3110,449,020,49,056,113,06,121,030,271,3104,42,32,450,020,49,056,112,07,121,01,14,020,23,01,271,3101,42,32,453,021,49,055,113,07,127,018,275,3100,459,021,410,054,113,08,127,017,275,3101,457,022,410,053,113,09,127,016,276,3101,456,022,411,052,114,09,126,015,278,398,41,32,456,022,410,051,116,08,127,015,278,397,43,31,455,023,410,051,111,011,128,015,280,397,458,023,410,051,19,011,129,016,280,398,456,024,410,053,15,013,127,017,282,397,456,024,411,073,124,016,283,396,456,025,411,076,121,015,285,394,455,027,48,081,121,011,286,395,455,02,42,023,48,076,126,010,287,394,456,01,41,026,47,075,126,09,291,392,460,01,42,021,48,073,125,010,291,393,463,022,47,072,113,01,12,017,294,393,464,03,41,017,46,071,17,027,297,389,467,01,42,017,46,070,17,028,298,35,23,381,466,01,43,017,44,069,13,034,299,33,24,380,471,017,45,0104,2106,383,469,017,45,0103,2107,383,469,018,44,0101,2109,385,462,02,43,018,43,091,23,05,2112,379,46,31,461,03,43,018,42,091,25,03,2111,381,42,32,463,03,43,018,41,093,2118,381,467,03,43,0112,2118,381,467,03,44,016,41,087,21,06,2118,380,468,04,43,0100,26,01,2123,379,469,03,43,099,2128,381,470,02,42,0101,2127,382,470,03,41,0101,2127,382,470,03,41,0103,2125,381,470,04,41,0105,2123,381,469,05,41,0107,2121,381,469,05,42,0107,2111,31,28,381,468,06,42,0107,2111,36,02,383,467,06,41,0109,2110,391,467,06,41,0109,2109,31,21,391,465,019,41,097,2108,394,463,0120,2108,393,462,09,42,08,41,0102,2107,395,459,011,42,0111,2107,394,459,011,43,0109,2108,394,458,011,47,0106,2108,02,32,01,389,458,011,47,0106,260,02,244,07,389,458,010,47,0108,258,03,244,06,391,450,04,42,010,46,0109,255,07,243,05,394,448,017,43,01,42,0109,253,08,244,04,394,448,018,42,0112,244,03,25,010,244,03,313,03,379,448,018,42,0112,243,06,22,011,242,07,38,08,377,448,019,41,0112,242,022,240,07,37,09,379,446,019,42,0111,240,025,239,07,36,010,34,02,374,431,02,412,018,44,0110,239,026,239,07,36,010,32,04,371,433,02,411,020,44,0109,240,027,21,01,235,08,35,017,370,432,04,43,01,46,021,45,080,23,025,237,033,234,08,33,019,370,432,04,41,05,44,021,45,079,27,03,21,017,237,034,234,030,368,41,31,430,012,45,020,44,077,217,014,236,037,232,030,367,433,011,47,019,44,076,227,03,226,02,29,039,230,030,368,434,010,47,018,44,077,255,06,25,041,229,029,370,41,31,436,07,46,017,45,077,253,054,228,029,373,436,07,45,016,45,078,252,056,226,029,375,434,08,45,014,47,078,251,058,225,029,375,433,09,45,013,48,078,251,059,225,029,373,432,011,45,012,49,078,251,059,225,030,372,431,012,45,011,410,078,251,059,224,032,372,430,011,46,05,413,01,41,079,251,059,224,033,35,01,365,430,011,43,07,413,082,251,058,226,034,32,02,365,431,019,411,086,249,059,226,041,362,432,017,410,088,249,059,226,039,31,02,361,432,016,48,01,41,088,249,060,225,040,364,433,014,47,092,247,062,216,01,21,01,25,02,22,038,364,432,014,44,01,41,092,247,064,214,010,24,036,364,434,014,43,094,246,066,210,01,23,09,23,035,367,433,014,43,093,243,069,211,02,22,09,22,035,368,433,014,42,094,242,070,21,01,29,050,367,434,014,41,095,242,072,210,050,369,430,0110,242,073,210,050,368,431,0110,241,076,29,049,369,430,0109,241,078,28,050,368,430,0109,241,077,210,050,368,428,0110,240,078,211,049,368,428,0109,241,080,210,048,367,429,0109,242,080,29,049,36,02,357,429,0111,241,076,21,03,210,048,34,03,358,429,0111,241,079,210,051,32,03,355,431,0113,240,077,21,01,27,02,21,057,352,433,0113,239,05,21,072,21,02,27,01,21,059,350,432,0114,238,083,26,060,31,02,348,430,0116,237,084,25,066,346,429,0117,236,084,26,066,345,429,0118,236,085,21,01,21,066,33,03,340,429,0118,236,0162,339,428,0121,233,0165,335,429,0129,224,0166,337,424,0134,221,0168,339,421,0135,220,0169,338,414,01,44,0138,214,01,24,0170,34,01,34,01,311,03,314,412,04,42,0140,28,0188,31,02,39,04,315,410,06,41,0140,26,0194,35,07,39,02,34,49,07,41,0140,24,0198,31,014,34,06,48,06,43,0142,21,0215,31,010,41,02,43,06,43,0374,41,09999,09999,0866'.split(',').forEach(run => { const v = +run[0], n = +run.slice(1); out.fill(v, i, i+n); i += n; });
+    return out; })();
+  let canvas = document.createElement('canvas');
+  let ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let ready = false;
+
+  function prepCanvas() {
+    canvas.width = baseMap.naturalWidth;
+    canvas.height = baseMap.naturalHeight;
+    ctx.drawImage(baseMap, 0, 0);
+    ready = true;
+  }
+
+  if (baseMap.complete) {
+    prepCanvas();
+  } else {
+    baseMap.addEventListener('load', prepCanvas);
+  }
+
+  function classify(r, g, b) {
+    const rf = r/255, gf = g/255, bf = b/255;
+    const maxc = Math.max(rf,gf,bf), minc = Math.min(rf,gf,bf);
+    const val = maxc;
+    const sat = maxc > 0 ? (maxc-minc)/maxc : 0;
+
+    if (val < 0.06) return null;
+    if (sat < 0.15) return 'old-republic';
+
+    let hue = 0;
+    const d = maxc - minc;
+    if (d !== 0) {
+      if (maxc === rf) hue = ((gf-bf)/d) % 6;
+      else if (maxc === gf) hue = (bf-rf)/d + 2;
+      else hue = (rf-gf)/d + 4;
+    }
+    hue = hue * 60;
+    if (hue < 0) hue += 360;
+
+    if (hue >= 25 && hue < 140) return 'western';
+    if (hue >= 150 && hue < 250) return 'eastern';
+    if (hue >= 250 && hue < 345) return 'central';
+    return null;
+  }
+
+  function clearOverlays() {
+    Object.values(overlays).forEach(o => o.classList.remove('active'));
+  }
+
+  frame.addEventListener('click', (e) => {
+    if (!ready) return;
+    const rect = baseMap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+      clearOverlays();
+      return;
+    }
+    const gx = Math.min(MASK_W-1, Math.floor(x / rect.width * MASK_W));
+    const gy = Math.min(MASK_H-1, Math.floor(y / rect.height * MASK_H));
+    const region = MASK_NAMES[REGION_MASK[gy*MASK_W + gx]];
+
+    if (!region) {
+      clearOverlays();
+      return;
+    }
+
+    clearOverlays();
+    overlays[region].classList.add('active');
+
+    setTimeout(() => {
+      showView(regionViews[region]);
+    }, 180);
+  });
+</script>
+</body>
+</html>
