@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYBERTECH — Institutions Archive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.9s ease;
+  }
+
+  .scene.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Scene 4: Institution placeholder - no photo, just black + heading */
+  #scene-institution {
+    background: #000;
+  }
+
+  .institution-content {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 84%;
+    text-align: center;
+  }
+
+  /* Twitchers monitor logo - matched to the same 88x88 size used on the
+     Cybertech assessment-feed pages (.feed-logo-wrap img) for visual
+     consistency across all canonical Cybertech imagery. ID selector
+     overrides the inherited ".scene img" 100%/cover rule. */
+  #institutionLogo {
+    width: 88px;
+    height: 88px;
+    display: none;
+    margin: 0 auto 18px auto;
+    object-fit: contain;
+  }
+
+  .institution-heading {
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: 6px;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: #d8ecff;
+  }
+
+  .institution-subheading {
+    margin-top: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(216, 236, 255, 0.45);
+  }
+
+  .scene img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.92) contrast(1.05);
+  }
+
+  /* Office scene: show the full photo uncropped (letterboxed if needed)
+     so every monitor is always visible, matching what's actually seen
+     on screen rather than cropping unpredictably per device. */
+  #scene-office img,
+  #scene-entrance img {
+    object-fit: contain;
+    background: #000;
+  }
+
+  /* Hotspot base */
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid rgba(120, 190, 255, 0);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.35s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .hotspot:hover {
+      border: 1px solid rgba(120, 190, 255, 0.55);
+      background: rgba(120, 190, 255, 0.06);
+      box-shadow: 0 0 18px rgba(120, 190, 255, 0.25);
+    }
+  }
+
+  .hotspot-label {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(180, 220, 255, 0.85);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    text-transform: uppercase;
+  }
+
+  .hotspot:hover .hotspot-label {
+    opacity: 1;
+  }
+
+  /* Scene 1: Entrance - door hotspot positioned dynamically in JS via
+     data-l/t/w/h (see positionHotspots()), same crop-proof approach as
+     the office monitors. */
+
+  /* Scene 2: Elevator - lights flicker during descent, like the power's
+     unstable. Irregular timing (quick double-blinks + one longer dip)
+     rather than a smooth pulse, so it reads as a fault, not a strobe. */
+  .elevator-flicker {
+    animation: powerFlicker 3.6s infinite;
+  }
+
+  @keyframes powerFlicker {
+    0%    { filter: brightness(1); }
+    3%    { filter: brightness(0.25); }
+    5%    { filter: brightness(1); }
+    7%    { filter: brightness(0.15); }
+    9%    { filter: brightness(1); }
+    38%   { filter: brightness(1); }
+    40%   { filter: brightness(0.2); }
+    41%   { filter: brightness(0.7); }
+    43%   { filter: brightness(1); }
+    68%   { filter: brightness(1); }
+    70%   { filter: brightness(0.08); }
+    74%   { filter: brightness(0.5); }
+    76%   { filter: brightness(1); }
+    100%  { filter: brightness(1); }
+  }
+
+  /* Scene 2: Elevator - floor indicator overlay (covers the baked-in "G" display) */
+  .floor-indicator {
+    position: absolute;
+    left: 46.5%;
+    top: 11.2%;
+    width: 7%;
+    height: 4.7%;
+    background: #0a0a0a;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: #d8ecff;
+    pointer-events: none;
+  }
+
+  .prompt-tag {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(200, 225, 255, 0.5);
+    text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  /* Fade-to-black transition overlay */
+  .fade-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .fade-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Scene 3: Office - return control */
+  .return-control {
+    position: absolute;
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(200, 225, 255, 0.55);
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid rgba(200, 225, 255, 0.25);
+    padding: 10px 22px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.4);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+  }
+
+  .return-control:hover {
+    border-color: rgba(200, 225, 255, 0.6);
+    background: rgba(0,0,0,0.65);
+    box-shadow: 0 0 20px rgba(120, 190, 255, 0.2);
+  }
+
+  .access-tag {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(140, 220, 160, 0.75);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* Monitor bank overlay - 8 institution screens on the office wall */
+  .monitor-cell {
+    position: absolute;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Monitor grid row/column positions (percent of office image) — calibrated */
+  /* m1-m8 no longer positioned by static CSS percent - JS calculates their
+     real on-screen box from the image's actual rendered/cropped bounds,
+     using the data-l/t/w/h percentages below (relative to the photo itself,
+     exactly what the calibration tool measures). See positionMonitors(). */
+
+  /* Shared Cybertech terminal-readout treatment - used by every dedicated
+     assessment-feed scene (Solari, Northern Territories, Hatchet Hills,
+     K-Militia, Green Guard, and future ones). */
+  #scene-solari-feed,
+  #scene-northern-feed,
+  #scene-hatchet-feed,
+  #scene-kmilitia-feed,
+  #scene-greenguard-feed {
+    background: #000;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #scene-solari-feed::before,
+  #scene-northern-feed::before,
+  #scene-hatchet-feed::before,
+  #scene-kmilitia-feed::before,
+  #scene-greenguard-feed::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0) 3px
+    );
+  }
+
+  .feed-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 7rem 1.5rem;
+    color: #ececec;
+  }
+
+  .feed-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2.4rem;
+  }
+
+  .feed-logo-wrap img {
+    width: 88px;
+    height: 88px;
+    display: block;
+  }
+
+  .feed-id {
+    margin-top: 0.9rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+  }
+
+  .feed-title {
+    text-align: center;
+    font-size: 1.15rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0.6rem 0 0.2rem 0;
+    font-weight: 700;
+  }
+
+  .feed-subtitle {
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    margin: 0;
+  }
+
+  .solari-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #444 20%, #444 80%, transparent);
+    margin: 2.2rem 0;
+  }
+
+  .solari-section {
+    margin-bottom: 2rem;
+  }
+
+  .solari-section h2 {
+    font-size: 0.82rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0 0 0.8rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #333;
+    font-weight: 500;
+  }
+
+  .solari-section p {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: #d8d8d8;
+    margin: 0 0 0.9rem 0;
+  }
+
+  .solari-section p:last-child { margin-bottom: 0; }
+
+  .solari-sub-heading {
+    font-size: 0.85rem;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+  }
+
+  .feed-footer-stamp {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  * { -webkit-touch-callout: none; }
+  #rainFx { position: absolute; left: 0; top: 0; pointer-events: none; }
+  #scene-limo { background: #000; }
+  .limo-ride { position: absolute; inset: 0; animation: limoRide 4.2s ease-in-out infinite; }
+  .limo-ride img { width: 100%; height: 100%; object-fit: contain; display: block; transform: scale(1.02); }
+  #limoRain { position: absolute; left: 0; top: 0; pointer-events: none; }
+  /* the car bouncing over the road: mostly up and down, uneven */
+  @keyframes limoRide {
+    0%, 100% { transform: translateY(0); }
+    9%  { transform: translateY(-2px); }
+    17% { transform: translateY(1.6px) rotate(0.04deg); }
+    24% { transform: translateY(-0.6px); }
+    38% { transform: translateY(0.4px); }
+    46% { transform: translateY(-2.6px) rotate(-0.05deg); }
+    54% { transform: translateY(2.2px); }
+    61% { transform: translateY(-0.8px); }
+    72% { transform: translateY(0.6px); }
+    83% { transform: translateY(-1.8px) rotate(0.04deg); }
+    91% { transform: translateY(1.2px); }
+  }
+  .limo-ride { animation-duration: 1.7s; animation-timing-function: ease-in-out; }
+  .limo-ride.stopped { animation: limoStop 0.9s ease-out forwards; }
+  @keyframes limoStop { 0% { transform: translate(0, 0); } 35% { transform: translate(0, 3px) rotate(0.05deg); } 70% { transform: translate(0, -1px); } 100% { transform: translate(0, 0); } }
+  @media (prefers-reduced-motion: reduce) { .limo-ride { animation: none; } }
+  .step-out { position: absolute; left: 50%; top: 80%; transform: translate(-50%, -50%); white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: #d8ecff; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(200, 225, 255, 0.4); padding: 12px 30px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 1.2s ease, background .2s ease; }
+  .limo-line.show { opacity: 1; }
+  .step-out.show { opacity: 1; pointer-events: auto; }
+  .limo-line { position: absolute; left: 50%; top: 80%; transform: translate(-50%, -50%); white-space: nowrap; opacity: 0; transition: opacity .5s ease; pointer-events: none; font-family: 'JetBrains Mono', monospace; font-size: clamp(12px, 2vw, 16px); letter-spacing: 3px; line-height: 1.9; text-transform: uppercase; color: #d8ecff; text-shadow: 0 0 14px rgba(0, 0, 0, 1), 0 0 6px #000, 0 0 2px #000; }
+  .step-out:hover { background: rgba(0, 0, 0, 0.85); }
+  .cam-layer, .lift-panel { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .cam-layer .rec { fill: #ff2a1a; animation: recBlink 1.6s steps(1, end) infinite; filter: drop-shadow(0 0 2px #ff2a1a); }
+  #camR .rec { animation-delay: .5s; } #caml .rec { animation-delay: .9s; } #camr .rec { animation-delay: 1.2s; }
+  @keyframes recBlink { 0% { opacity: 1; } 55% { opacity: 0.12; } }
+  .lift-panel .lit-row { opacity: 0; transition: opacity .25s ease; }
+  .lift-panel .lit-row.on { opacity: 1; }
+  .sound-toggle { position: fixed; left: 14px; bottom: 12px; z-index: 998; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1.5px; color: rgba(200, 225, 255, 0.6); background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(200, 225, 255, 0.25); padding: 6px 10px; cursor: pointer; }
+  .sound-toggle.on { color: #d8ecff; border-color: rgba(200, 225, 255, 0.5); }
+  @media (orientation: portrait) { .sound-toggle { display: none; } }
+  #rotate-lock { position: fixed; inset: 0; z-index: 1000; background: #0a0a0a; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  #rotate-lock .rl-text { font-size: 13px; letter-spacing: 3px; color: #C9A24A; text-transform: uppercase; text-align: center; padding: 0 24px; }
+  #rotate-lock svg { animation: rl-rock 2.4s ease-in-out infinite; }
+  @keyframes rl-rock { 0%,100% { transform: rotate(0deg); } 40%,60% { transform: rotate(-90deg); } }
+  .wa-return { position: fixed; right: 18px; bottom: 14px; z-index: 998; font-size: 11px; letter-spacing: 1.5px; color: rgba(200, 225, 255, 0.5); text-decoration: none; background: rgba(0, 0, 0, 0.8); padding: 6px 10px; }
+  .wa-return:hover { color: #d8ecff; }
+  @media (orientation: portrait) { #rotate-lock { display: flex; } .wa-return { display: none; } }
+
+  .solari-return {
+    position: static !important;
+    display: table;
+    margin: 2.4rem auto 0 auto !important;
+    transform: none !important;
+  }
+
+  @media (max-width: 480px) {
+    .feed-wrap { padding: 2rem 1.1rem 6rem 1.1rem; }
+    .feed-title { font-size: 1rem; }
+    .solari-section p { font-size: 0.87rem; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- SCENE 1: ENTRANCE -->
+  <div class="scene active" id="scene-limo">
+    <div class="limo-ride"><img id="limoImg" src="image-01.jpg" alt="Inside the limousine"><canvas id="limoRain" aria-hidden="true"></canvas></div>
+    <div class="limo-line" id="limoLine">We&rsquo;ve arrived at Cybertech.</div>
+    <button class="step-out" id="stepOut" type="button" onclick="Sound.unlock(); goTo('scene-entrance')">Click Here</button>
+  </div>
+
+  <div class="scene" id="scene-entrance">
+    <img id="entranceImg" src="image-02.jpg" alt="CYBERTECH entrance">
+    <svg class="cam-layer" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g id="camL" data-px="63" data-py="514"><image href="image-03.png" x="34" y="471" width="75" height="63"/><circle class="rec" cx="44.5" cy="480" r="1.6"/></g><g id="camR" data-px="1455" data-py="520"><image href="image-04.png" x="1412" y="473" width="74" height="61"/><circle class="rec" cx="1475.5" cy="482" r="1.6"/></g><g id="caml" data-px="470" data-py="571"><image href="image-05.png" x="461" y="549" width="31" height="28"/><circle class="rec" cx="468" cy="555.5" r="0.9"/></g><g id="camr" data-px="1047.5" data-py="571"><image href="image-06.png" x="1029" y="550" width="30" height="27"/><circle class="rec" cx="1051" cy="556" r="0.9"/></g></svg>
+    <canvas id="rainFx" aria-hidden="true"></canvas>
+    <div class="prompt-tag">Approach the entrance</div>
+    <div class="hotspot door" data-l="41" data-t="50" data-w="16" data-h="30" onclick="goTo('scene-elevator')">
+      <span class="hotspot-label">Enter</span>
+    </div>
+  </div>
+
+  <!-- SCENE 2: ELEVATOR -->
+  <div class="scene" id="scene-elevator">
+    <img class="elevator-flicker" src="image-07.jpg" alt="CYBERTECH elevator">
+    <svg class="lift-panel elevator-flicker" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect x="719" y="119" width="98" height="45" rx="2" fill="#070708"/><text id="floorIndicator" x="768" y="142" text-anchor="middle" dominant-baseline="central" font-family="Inter, Helvetica, Arial, sans-serif" font-size="23" letter-spacing="1" fill="#eef5ff">&#8595; G</text><image class="lit-row" id="litG" href="image-08.png" x="1070" y="404" width="127" height="40"/><image class="lit-row" id="litB1" href="image-09.png" x="1070" y="445" width="127" height="42"/><image class="lit-row" id="litB2" href="image-10.png" x="1070" y="488" width="127" height="41"/><image class="lit-row" id="litB3" href="image-11.png" x="1070" y="530" width="127" height="42"/><image class="lit-row" id="litB4" href="image-12.png" x="1070" y="573" width="127" height="41"/></svg>
+    
+  </div>
+
+  <!-- SCENE 3: LUMOS OFFICE -->
+  <div class="scene" id="scene-office">
+    <img id="officeImg" src="image-13.jpg" alt="Lumos office">
+    <div class="monitor-cell m1" data-l="22.0" data-t="22.0" data-w="17.5" data-h="13.5" onclick="openInstitution('Northern Territories')"></div>
+    <div class="monitor-cell m2" data-l="41.28" data-t="22.0" data-w="17.5" data-h="13.5" onclick="openInstitution('Green Guards')"></div>
+    <div class="monitor-cell m3" data-l="60.37" data-t="22.0" data-w="17.5" data-h="13.5" onclick="openInstitution('K-Militia')"></div>
+    <div class="monitor-cell m4" data-l="22.0" data-t="37.0" data-w="17.5" data-h="13.5" onclick="openInstitution('Hatchet Hills')"></div>
+    <div class="monitor-cell m5" data-l="41.28" data-t="37.0" data-w="17.5" data-h="13.5" onclick="openInstitution('Solari Rebels')"></div>
+    <div class="monitor-cell m6" data-l="60.37" data-t="37.0" data-w="17.5" data-h="13.5" onclick="openInstitution('Twitchers')"></div>
+
+    <div class="return-control" onclick="goTo('scene-entrance')">Return to Lobby</div>
+  </div>
+
+  <!-- SCENE 4: INSTITUTION PAGE (placeholder - one shared scene, content filled per click) -->
+  <div class="scene" id="scene-institution">
+    <div class="institution-content">
+      <img id="institutionLogo" src="image-14.png" alt="Cybertech" style="display:none;">
+      <h1 class="institution-heading" id="institutionHeading"></h1>
+      <div class="institution-subheading" id="institutionSubheading"></div>
+    </div>
+    <div class="return-control" onclick="goTo('scene-office')">Return to Office</div>
+  </div>
+
+  <!-- SCENE 5: SOLARI MILITIA GROUPS - Cybertech assessment feed -->
+  <div class="scene" id="scene-solari-feed">
+    <div class="feed-wrap">
+
+      <div class="feed-logo-wrap">
+        <img src="image-14.png" alt="Cybertech">
+        <div class="feed-id">Cybertech &mdash; Assessment File</div>
+        <div class="feed-title">Solari Militia Groups</div>
+        <div class="feed-subtitle">South of the Trench</div>
+      </div>
+
+      <div class="solari-divider"></div>
+
+      <div class="solari-section">
+        <h2>Overview</h2>
+        <p>The Solari militia groups operate south of the Trench, beyond the continental frontier. Due to the hostile nature of the region and the extremely low survival rate of personnel travelling beyond the defensive line, verified intelligence remains limited. Current assessments indicate the presence of multiple independent armed groups rather than a single organised military force.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Current Activity</h2>
+        <p>Recent activity has consisted of sporadic attacks against Trench positions and FLAME personnel assigned to the border. Recorded incidents typically involve reconnaissance, sniper fire, short assaults and rapid withdrawals, avoiding prolonged conventional engagements.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Known Capabilities</h2>
+        <p>Recovered equipment indicates that Solari forces rely primarily on older firearms, locally manufactured weapons, repaired military surplus and captured battlefield equipment. Advanced surveillance systems, modern communications infrastructure and large-scale industrial production have not been observed.</p>
+        <p>Despite their technological disadvantage, Solari fighters demonstrate extensive knowledge of the southern terrain, disciplined fieldcraft and effective small-unit tactics.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Intelligence Summary</h2>
+        <p>Cybertech assesses the southern frontier as stable but active. No evidence currently suggests preparations for a coordinated large-scale offensive. Continued surveillance of militia activity remains an operational priority.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Supporting Evidence</h2>
+        <p class="solari-sub-heading">Captured Solari Combatant</p>
+        <p>Several years prior to the current assessment, FLAME personnel captured a wounded Solari combatant during a border operation. The prisoner was transferred to Cybertech for interrogation.</p>
+        <p>Questioning proved largely unsuccessful. The individual spoke only Solari. No verified continental speaker possessed sufficient knowledge of the language to conduct meaningful interviews. Analysts documented recurring vocabulary, phonetic patterns and speech recordings for future study, but the majority of the prisoner&rsquo;s testimony remained untranslated.</p>
+      </div>
+
+      <div class="feed-footer-stamp">End of File &mdash; Cybertech Internal Use Only</div>
+
+      <div class="return-control solari-return" onclick="goTo('scene-office')">&larr; Back to Lumos Office</div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 6: NORTHERN TERRITORIES - Cybertech assessment feed -->
+  <div class="scene" id="scene-northern-feed">
+    <div class="feed-wrap">
+
+      <div class="feed-logo-wrap">
+        <img src="image-14.png" alt="Cybertech">
+        <div class="feed-id">Cybertech &mdash; Assessment File</div>
+        <div class="feed-title">Northern Territories</div>
+        <div class="feed-subtitle">Eurussia&rsquo;s Northern Frontier</div>
+      </div>
+
+      <div class="solari-divider"></div>
+
+      <div class="solari-section">
+        <h2>Overview</h2>
+        <p>The Northern Territories are designated by Cybertech as the collection of remote settlements and island communities stretching across Eurussia&rsquo;s northern frontier, including the islands north of Eurussia beyond the mainland. The region has remained an operational priority due to recurring instability affecting multiple northern population centres.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Current Activity</h2>
+        <p>Intelligence received from Commander David Whitfield indicates that mainland insurgent activity has been neutralised. Remaining hostile elements are now confined to the islands north of Eurussia, where final PMC operations are underway.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Known Capabilities</h2>
+        <p>Hostile groups operating within the Northern Territories possess limited combat capability. Field intelligence identifies civilian personnel equipped primarily with hunting rifles, salvaged equipment and improvised defensive positions. No evidence has been recovered to suggest the presence of professional military training or organised logistical support.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Intelligence Summary</h2>
+        <p>Cybertech assesses the northern insurgency as a consequence of economic decline rather than coordinated ideological opposition. Operational reporting links the decline to the loss of manufacturing work after Parliament moved production towards Phoenix. Isolated settlements now face widespread shortages of food, fuel and essential supplies.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Supporting Evidence</h2>
+        <p class="solari-sub-heading">PMC Northern Operations Report</p>
+        <p>Following inspections conducted during the northern suppression campaign, PMC personnel documented abandoned industrial sites, deteriorating infrastructure, inactive mining operations and settlements experiencing severe shortages of basic necessities. Civilian interviews consistently identified declining living conditions as the primary source of local unrest. These findings remain the principal intelligence source supporting Cybertech&rsquo;s current assessment of the Northern Territories.</p>
+      </div>
+
+      <div class="feed-footer-stamp">End of File &mdash; Cybertech Internal Use Only</div>
+
+      <div class="return-control solari-return" onclick="goTo('scene-office')">&larr; Back to Lumos Office</div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 7: HATCHET HILLS - Cybertech assessment feed -->
+  <div class="scene" id="scene-hatchet-feed">
+    <div class="feed-wrap">
+
+      <div class="feed-logo-wrap">
+        <img src="image-14.png" alt="Cybertech">
+        <div class="feed-id">Cybertech &mdash; Assessment File</div>
+        <div class="feed-title">Hatchet Hills</div>
+        <div class="feed-subtitle">Autonomous Southern Province</div>
+      </div>
+
+      <div class="solari-divider"></div>
+
+      <div class="solari-section">
+        <h2>Overview</h2>
+        <p>Cybertech classifies Hatchet Hills as an autonomous southern province operating outside direct Phoenix authority. Historical PMC records identify Hatchet Hills as a province that should not be underestimated. The province has fought combined continental forces once and PMC forces once, retaining its sovereignty following both conflicts.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Current Activity</h2>
+        <p>Human source reporting confirms permanent military checkpoints across all recognised border crossings. Surveillance indicates no force mobilisation beyond provincial territory. Multiple Cybertech reconnaissance drones have been destroyed during aerial collection operations, limiting intelligence gathering within the province.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Known Capabilities</h2>
+        <p>PMC after-action reports identify Hatchet Hills as a defensive force built around terrain denial. Field observations confirm fortified checkpoints, elevated watchtowers, automated gate defences, steel rockfall barriers and restricted valley approaches designed to slow or prevent military advances.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Intelligence Summary</h2>
+        <p>Current assessments indicate that Hatchet Hills continues to honour the autonomy agreement established following the last confirmed conflict with PMC forces. No reporting currently suggests preparations for renewed hostilities.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Supporting Evidence</h2>
+        <p class="solari-sub-heading">Angel of Death</p>
+        <p>Historical PMC records reference an unidentified combatant operating within Hatchet Hills under the designation <strong>Angel of Death</strong>.</p>
+        <p>Archived combat records confirm that the individual engaged Commander David Whitfield during the closing stages of the Second Hatchet Hills Rebellion. The engagement concluded without a decisive outcome before negotiations secured Hatchet Hills&rsquo; autonomous status.</p>
+        <p>The subject&rsquo;s identity, affiliation and current location remain unknown.</p>
+        <p><strong>Status:</strong> Active investigation.</p>
+      </div>
+
+      <div class="feed-footer-stamp">End of File &mdash; Cybertech Internal Use Only</div>
+
+      <div class="return-control solari-return" onclick="goTo('scene-office')">&larr; Back to Lumos Office</div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 8: K-MILITIA - Cybertech assessment feed -->
+  <div class="scene" id="scene-kmilitia-feed">
+    <div class="feed-wrap">
+
+      <div class="feed-logo-wrap">
+        <img src="image-14.png" alt="Cybertech">
+        <div class="feed-id">Cybertech &mdash; Assessment File</div>
+        <div class="feed-title">K-Militia</div>
+        <div class="feed-subtitle">Krashnov Militia</div>
+      </div>
+
+      <div class="solari-divider"></div>
+
+      <div class="solari-section">
+        <h2>Overview</h2>
+        <p>Public command records identify the Krashnov Militia, commonly referred to as the K-Militia, as commanded by Petr Romanov on Andrew Romanov&rsquo;s behalf, with General Varduk as its serving general. Shared reporting from Cybertech assets and Krashnov-based sources confirms the force is divided between a city army stationed within Krashnov and provincial armies assigned throughout the surrounding territories.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Current Activity</h2>
+        <p>Drone surveillance, field observation and human source reporting indicate a sustained increase in live-fire exercises, urban response drills and coordinated troop movements across Krashnov. No mobilisation orders have been intercepted. Current assessments suggest the force is maintaining a heightened state of operational readiness.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Known Capabilities</h2>
+        <p>Cybertech analysis based on surveillance operations, hacked recruitment records and intercepted internal communications identifies the K-Militia as significantly larger than Green Guard. The force relies upon visible military presence, sustained patrols and large-scale manpower deployment to maintain control throughout Krashnov and its provinces.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Intelligence Summary</h2>
+        <p>Civilian reporting consistently alleges that military funding continues to receive priority over municipal investment. Recruitment figures gathered through local sources indicate that K-Militia salaries exceed those offered by civilian employment, contributing to continued enlistment despite growing public dissatisfaction. Separate reporting from trusted contacts within Krashnov identifies unresolved friction among senior command personnel. The cause and operational significance remain unconfirmed.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Supporting Evidence</h2>
+        <p class="solari-sub-heading">Krashnov Human Source Network</p>
+        <p>Cybertech maintains a limited network of civilian informants and trusted contacts within Krashnov. Reporting from these sources is routinely compared against surveillance footage, recruitment activity and publicly available government records before being incorporated into operational assessments.</p>
+        <p><strong>Assessment:</strong> Reporting considered reliable. Continued monitoring recommended.</p>
+      </div>
+
+      <div class="feed-footer-stamp">End of File &mdash; Cybertech Internal Use Only</div>
+
+      <div class="return-control solari-return" onclick="goTo('scene-office')">&larr; Back to Lumos Office</div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 9: GREEN GUARD - Cybertech assessment feed -->
+  <div class="scene" id="scene-greenguard-feed">
+    <div class="feed-wrap">
+
+      <div class="feed-logo-wrap">
+        <img src="image-14.png" alt="Cybertech">
+        <div class="feed-id">Cybertech &mdash; Assessment File</div>
+        <div class="feed-title">Green Guard</div>
+        <div class="feed-subtitle">Greentown Internal Security</div>
+      </div>
+
+      <div class="solari-divider"></div>
+
+      <div class="solari-section">
+        <h2>Overview</h2>
+        <p>Public records identify the Green Guard as Greentown&rsquo;s primary internal security force, operating under the authority of Luke Walker. Cybertech liaison records confirm the organisation is divided into small, chief-led militia units, providing rapid deployment across Greentown while supporting Rebecca Walker and the Ministry of Agriculture during domestic security operations.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Current Activity</h2>
+        <p>Operational updates received from Green Guard command identify harvest thefts across Greentown&rsquo;s outer and northwestern provinces as the force&rsquo;s current enforcement priority. Border monitoring remains active across recognised crossing points, while scheduled naval patrols continue at sea around the ends of the Trench to monitor maritime traffic.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Known Capabilities</h2>
+        <p>Years of joint operations have established the Green Guard as the continent&rsquo;s foremost specialists in reconnaissance and guerrilla warfare. Technical evaluations confirm the organisation fields the continent&rsquo;s most advanced drone network, supported by route sensors and remote field cameras. Naval deployment records identify Greentown as the continent&rsquo;s only city operating a dedicated fleet, established to prevent unauthorised entry around the Trench by sea. Fleet disposition reports confirm two patrol vessels remain stationed near Pacific Command at the Krashnov end of the Trench.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Intelligence Summary</h2>
+        <p>Cybertech assesses the Green Guard as significantly smaller than both the PMC and the K-Militia. Its operational effectiveness is derived from surveillance coverage, mobility and rapid intelligence distribution rather than manpower. Current cooperation between Green Guard and Cybertech continues to provide reliable operational awareness across Greentown.</p>
+      </div>
+
+      <div class="solari-section">
+        <h2>Supporting Evidence</h2>
+        <p class="solari-sub-heading">Harvest Theft Investigation</p>
+        <p>Ministry of Agriculture case files and Green Guard drone footage show produce taken from road convoys and farm stores before official collection. Losses are mostly grain, root stores and preserved fruit. The thefts are organised enough to move produce quickly but not organised enough to be called a faction. Most of the evidence points to hungry communities taking what they can.</p>
+        <p>Ember West is working with Green Guard analysts to track the pattern. The investigation remains active.</p>
+      </div>
+
+      <div class="feed-footer-stamp">End of File &mdash; Cybertech Internal Use Only</div>
+
+      <div class="return-control solari-return" onclick="goTo('scene-office')">&larr; Back to Lumos Office</div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="fade-overlay" id="fadeOverlay"></div>
+
+<div id="rotate-lock">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#C9A24A" stroke-width="2"><rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="50" r="2"/></svg>
+  <div class="rl-text">Please rotate device to continue</div>
+</div>
+<button class="sound-toggle on" id="soundToggle" style="visibility:hidden" type="button" aria-label="Sound" onclick="Sound.toggle()">SOUND: ON</button>
+<a class="wa-return" href="https://wapublishing.co.uk" target="_top">&larr; Return to WA Publishing</a>
+
+<script>
+  // Photos are shown uncropped (object-fit: contain), so they letterbox to
+  // fit any screen shape rather than cutting any part off. This calculates
+  // exactly where the photo actually sits within the screen (it's rarely
+  // full-bleed on odd aspect ratios) and positions hotspots relative to
+  // that real, visible photo rectangle - so a hotspot always lands exactly
+  // where it should, regardless of screen shape. Reused for both the
+  // entrance door and the office monitors.
+  function positionHotspots(imgId, sceneId, selector) {
+    const img = document.getElementById(imgId);
+    const scene = document.getElementById(sceneId);
+    if (!img || !img.naturalWidth) return;
+
+    const containerW = scene.clientWidth;
+    const containerH = scene.clientHeight;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+
+    const scale = Math.min(containerW / naturalW, containerH / naturalH);
+    const renderedW = naturalW * scale;
+    const renderedH = naturalH * scale;
+    const offsetX = (containerW - renderedW) / 2;
+    const offsetY = (containerH - renderedH) / 2;
+
+    scene.querySelectorAll(selector).forEach(cell => {
+      const l = parseFloat(cell.dataset.l) / 100 * naturalW;
+      const t = parseFloat(cell.dataset.t) / 100 * naturalH;
+      const w = parseFloat(cell.dataset.w) / 100 * naturalW;
+      const h = parseFloat(cell.dataset.h) / 100 * naturalH;
+
+      cell.style.left = (offsetX + l * scale) + 'px';
+      cell.style.top = (offsetY + t * scale) + 'px';
+      cell.style.width = (w * scale) + 'px';
+      cell.style.height = (h * scale) + 'px';
+    });
+  }
+
+  function positionMonitors() {
+    positionHotspots('officeImg', 'scene-office', '.monitor-cell');
+  }
+
+  function positionDoor() {
+    positionHotspots('entranceImg', 'scene-entrance', '.hotspot.door');
+  }
+
+  window.addEventListener('resize', () => {
+    positionMonitors();
+    positionDoor();
+  });
+
+  function goTo(targetId) {
+    const overlay = document.getElementById('fadeOverlay');
+    const scenes = document.querySelectorAll('.scene');
+
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      scenes.forEach(s => s.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      Sound.scene(targetId);
+
+      setTimeout(() => {
+        overlay.classList.remove('active');
+      }, 60);
+
+      if (targetId === 'scene-elevator') {
+        startElevatorDescent();
+      }
+
+      if (targetId === 'scene-office') {
+        positionMonitors();
+      }
+    }, 550);
+  }
+
+  function startElevatorDescent() {
+    const floors = ['↓ G', '↓ B1', '↓ B2', '↓ B3', '↓ B4'];
+    const rows = ['litG', 'litB1', 'litB2', 'litB3', 'litB4'];
+    const light = n => rows.forEach((id, j) => document.getElementById(id).classList.toggle('on', j === n));
+    const indicator = document.getElementById('floorIndicator');
+    let i = 0;
+    indicator.textContent = floors[0];
+    light(0);
+    Sound.liftStart();
+
+    const interval = setInterval(() => {
+      i++;
+      if (i < floors.length) {
+        indicator.textContent = floors[i];
+        light(i);
+        Sound.floorTick();
+      }
+      if (i === floors.length - 1) {
+        clearInterval(interval);
+        Sound.arrive();
+        setTimeout(() => {
+          goTo('scene-office');
+        }, 2000);
+      }
+    }, 2000);
+  }
+
+  // Institution page: shared blank scene, heading text swapped per click.
+  // Layout/content to be designed later - this just proves the navigation.
+  // Monitor 8's glass is cracked, so it can't show a normal faction page -
+  // it shows a damaged-feed message instead.
+  function openInstitution(name) {
+    if (name === 'Solari Rebels') {
+      goTo('scene-solari-feed');
+      return;
+    }
+
+    if (name === 'Northern Territories') {
+      goTo('scene-northern-feed');
+      return;
+    }
+
+    if (name === 'Hatchet Hills') {
+      goTo('scene-hatchet-feed');
+      return;
+    }
+
+    if (name === 'K-Militia') {
+      goTo('scene-kmilitia-feed');
+      return;
+    }
+
+    if (name === 'Green Guards') {
+      goTo('scene-greenguard-feed');
+      return;
+    }
+
+    const heading = document.getElementById('institutionHeading');
+    const sub = document.getElementById('institutionSubheading');
+    const logo = document.getElementById('institutionLogo');
+
+    if (name === 'Twitchers') {
+      logo.style.display = 'block';
+      heading.textContent = 'INFORMATION CANNOT BE DISPLAYED';
+      sub.textContent = 'Feed interrupted';
+    } else {
+      logo.style.display = 'none';
+      heading.textContent = name;
+      sub.textContent = '';
+    }
+
+    goTo('scene-institution');
+  }
+
+  // Entrance is the first scene shown, before any goTo() call runs - so
+  // position the door as soon as the image is ready, not just on later
+  // navigation.
+  const entranceImgEl = document.getElementById('entranceImg');
+  if (entranceImgEl.complete) {
+    positionDoor();
+  } else {
+    entranceImgEl.addEventListener('load', positionDoor);
+  }
+
+  // ===== Security cameras: each pans on its own timing, with a quiet servo whirr =====
+  (function cams(){
+    const ids = ['camL', 'camR', 'caml', 'camr'];
+    const cams = ids.map(id => {
+      const g = document.getElementById(id);
+      return { g, px: +g.dataset.px, py: +g.dataset.py, a: 0, from: 0, to: 0, t0: 0, dur: 0, next: performance.now() + 800 + Math.random() * 3500, big: id === 'camL' || id === 'camR', left: id === 'camL' || id === 'caml' };
+    });
+    const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    function frame(now){
+      cams.forEach(c => {
+        if (c.dur && now < c.t0 + c.dur) {
+          c.a = c.from + (c.to - c.from) * ease((now - c.t0) / c.dur);
+        } else if (c.dur) {
+          c.a = c.to; c.dur = 0; c.next = now + 2500 + Math.random() * 4500;
+        } else if (now >= c.next) {
+          let to; do { to = -7 + Math.random() * 14; } while (Math.abs(to - c.a) < 4);
+          c.from = c.a; c.to = to; c.t0 = now; c.dur = 1300 + Math.abs(to - c.a) * 90;
+          Sound.whirr(c.dur / 1000, c.left ? -0.7 : 0.7, c.big);
+        }
+        c.g.setAttribute('transform', `rotate(${c.a.toFixed(2)} ${c.px} ${c.py})`);
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // ===== Sound: night air outside, the lift, the server room =====
+  const Sound = (() => {
+    let ctx = null, master = null, on = true, cur = 'scene-limo';
+    const bus = {}, LEVEL = { ent: 0.55, lift: 0.32, off: 0.45, feed: 0.28 };
+    let liftHum = null, noiseB = null;
+    const btn = () => document.getElementById('soundToggle');
+    function noise(sec){
+      const b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+    function loopNoise(){ const n = ctx.createBufferSource(); n.buffer = noiseB; n.loop = true; n.start(); return n; }
+    function G(v, to){ const g = ctx.createGain(); g.gain.value = v; if (to) g.connect(to); return g; }
+    function F(type, f, q, to){ const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; if (to) b.connect(to); return b; }
+    function O(type, f, to){ const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; if (to) o.connect(to); o.start(); return o; }
+    function lfo(rate, depth, param){ const o = O('sine', rate); const g = G(depth); o.connect(g); g.connect(param); }
+    function init(){
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ctx = new AC(); master = G(on ? 1 : 0, ctx.destination); noiseB = noise(4);
+      ['ent', 'lift', 'off'].forEach(k => bus[k] = G(0, master));
+      // outside: low wind that rises and falls, steady rain
+      const wf = F('lowpass', 380, 0.6), wg = G(0.28, bus.ent); loopNoise().connect(wf); wf.connect(wg);
+      lfo(0.06, 220, wf.frequency); lfo(0.11, 0.1, wg.gain);
+      const rh = F('highpass', 1800), rl = F('lowpass', 9000), rg = G(0.16, bus.ent); loopNoise().connect(rh); rh.connect(rl); rl.connect(rg);
+      lfo(0.17, 0.03, rg.gain);
+      const sp = F('bandpass', 5200, 0.7), sg = G(0.05, bus.ent); loopNoise().connect(sp); sp.connect(sg);
+      // lift: a low motor hum and rumble, only while it moves
+      liftHum = G(0, bus.lift);
+      const hf = F('lowpass', 200, 0.8, liftHum); O('sawtooth', 55, hf); O('sawtooth', 55.6, hf);
+      const h2 = G(0.12, liftHum); O('sine', 110, h2);
+      const rf = F('lowpass', 140, 0.7), rg2 = G(0.5, liftHum); loopNoise().connect(rf); rf.connect(rg2); lfo(6.5, 0.12, rg2.gain);
+      // server room: mains hum with fans
+      [[50, 0.10], [100, 0.05], [150, 0.025]].forEach(([f, v]) => { const g = G(v, bus.off); O('sine', f, g); });
+      const ff = F('bandpass', 800, 0.4), fg = G(0.06, bus.off); loopNoise().connect(ff); ff.connect(fg);
+      lfo(0.09, 0.01, fg.gain);
+      scene(cur, true);
+    }
+    function unlock(){
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iPhone: play even with the silent switch on
+      if (!ctx) init();
+      if (ctx && ctx.state !== 'running') ctx.resume();
+    }
+    // phones only allow sound from the end of a tap (touchend / click), so listen for those too
+    ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(e => document.addEventListener(e, unlock, { passive: true, capture: true }));
+    document.addEventListener('visibilitychange', () => { if (!ctx) return; document.hidden ? ctx.suspend() : ctx.resume(); });
+    function scene(id, now){
+      cur = id; const sb = btn(); if (sb) sb.style.visibility = id === 'scene-limo' ? 'hidden' : '';
+      if (!ctx) return;
+      const t = ctx.currentTime, k = id === 'scene-limo' ? null : id === 'scene-entrance' ? 'ent' : id === 'scene-elevator' ? 'lift' : 'off';
+      const lv = { ent: 0, lift: 0, off: 0 };
+      if (k) lv[k] = k === 'off' && id !== 'scene-office' ? LEVEL.feed : LEVEL[k];
+      Object.keys(bus).forEach(b => bus[b].gain.setTargetAtTime(lv[b], t, now ? 0.05 : 0.45));
+    }
+    function env(g, t, peak, a, d){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+    function whirr(dur, pan, big){
+      return;   // the entrance is silent
+      const t = ctx.currentTime, p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      const out = G(1, bus.ent); if (p) { p.pan.value = pan; p.connect(out); }
+      const dest = p || out, g = G(0, dest), bp = F('bandpass', big ? 1100 : 1600, 5, g);
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(big ? 140 : 190, t); o.frequency.linearRampToValueAtTime(big ? 165 : 225, t + dur * 0.5); o.frequency.linearRampToValueAtTime(big ? 150 : 200, t + dur);
+      o.connect(bp); o.start(t); o.stop(t + dur + 0.1);
+      const v = big ? 0.05 : 0.025;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.12); g.gain.setValueAtTime(v, t + dur - 0.15); g.gain.linearRampToValueAtTime(0, t + dur);
+      const c = ctx.createBufferSource(); c.buffer = noiseB; const cg = G(0, dest); c.connect(F('bandpass', 2500, 3, cg));
+      env(cg, t + dur, big ? 0.06 : 0.03, 0.003, 0.05); c.start(t + dur, Math.random() * 3, 0.08);
+    }
+    function liftStart(){
+      if (!ctx) return; const t = ctx.currentTime;
+      liftHum.gain.cancelScheduledValues(t); liftHum.gain.setValueAtTime(0.0001, t); liftHum.gain.exponentialRampToValueAtTime(1, t + 1.2);
+      const o = O('sine', 70), g = G(0, bus.lift); o.connect(g); o.frequency.exponentialRampToValueAtTime(40, t + 0.3); env(g, t, 0.35, 0.01, 0.35); o.stop(t + 0.5);
+    }
+    function floorTick(){
+      if (!ctx) return; const t = ctx.currentTime;
+      const o = O('sine', 1480), g = G(0, bus.lift); o.connect(g); env(g, t, 0.07, 0.004, 0.09); o.stop(t + 0.15);
+    }
+    function arrive(){
+      if (!ctx) return; const t = ctx.currentTime;
+      liftHum.gain.setTargetAtTime(0.0001, t + 0.3, 0.35);
+      [[1046.5, 0.6], [784, 1.05]].forEach(([f, at]) => {
+        [[1, 0.09], [2.01, 0.025], [3.98, 0.01]].forEach(([m, v]) => { const o = O('sine', f * m), g = G(0, bus.lift); o.connect(g); env(g, t + at, v, 0.005, 1.6); o.stop(t + at + 1.8); });
+      });
+      const n = ctx.createBufferSource(); n.buffer = noiseB; const lp = F('lowpass', 300, 0.7), g = G(0, bus.lift); n.connect(lp); lp.connect(g);
+      lp.frequency.setValueAtTime(300, t + 1.5); lp.frequency.linearRampToValueAtTime(1400, t + 2.3);
+      g.gain.setValueAtTime(0, t + 1.5); g.gain.linearRampToValueAtTime(0.12, t + 1.7); g.gain.linearRampToValueAtTime(0, t + 2.4); n.start(t + 1.5, 0, 1.0);
+    }
+    function toggle(){
+      on = !on; const b = btn(); b.textContent = on ? 'SOUND: ON' : 'SOUND: OFF'; b.classList.toggle('on', on);
+      if (ctx) { if (ctx.state === 'suspended') ctx.resume(); master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.1); }
+    }
+    function thunder(delay){
+      if (!ctx || cur !== 'scene-entrance') return;
+      const t = ctx.currentTime + delay, out = G(1, master), dist = Math.random();
+      // the crack: sharp, brighter when closer
+      const c = ctx.createBufferSource(); c.buffer = noiseB; const cf = F('bandpass', 1800, .8), cg = G(0, out); c.connect(cf); cf.connect(cg);
+      env(cg, t, .35 * (1 - dist * .7), .005, .35); c.start(t, Math.random() * 3, .5);
+      // the rumble rolling away
+      const n = ctx.createBufferSource(); n.buffer = noiseB; n.loop = true; const lp = F('lowpass', 260, .9), ng = G(0, out); n.connect(lp); lp.connect(ng);
+      lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(90, t + 4.5);
+      ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(.55, t + .08);
+      for (let k = 1; k < 7; k++) ng.gain.setTargetAtTime(.2 + Math.random() * .35, t + k * .45, .15);
+      ng.gain.setTargetAtTime(0.0001, t + 3.4, .7);
+      n.start(t); n.stop(t + 6.5);
+    }
+    return { scene, whirr, liftStart, floorTick, arrive, toggle, thunder, unlock };
+  })();
+
+
+  // ===== Entrance rain: falling rain, splashes on the wet ground, drops on the lens =====
+  (function rain(){
+    const scene = document.getElementById('scene-entrance');
+    const img = document.getElementById('entranceImg');
+    const cv = document.getElementById('rainFx'), cx = cv.getContext('2d');
+    const IW = 1536, IH = 1024;
+    let W = 0, H = 0, s = 1, ox = 0, oy = 0, dpr = 1, light = null, LW = 96, LH = 64;
+    function fit(){
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = scene.clientWidth; H = scene.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      s = Math.min(W / IW, H / IH); ox = (W - IW * s) / 2; oy = (H - IH * s) / 2;
+    }
+    function makeLight(){   // how lit each part of the picture is, so the rain shows where the lamps are
+      try {
+        const c = document.createElement('canvas'); c.width = LW; c.height = LH;
+        const g = c.getContext('2d'); g.filter = 'blur(2px)'; g.drawImage(img, 0, 0, LW, LH);
+        const d = g.getImageData(0, 0, LW, LH).data; light = new Float32Array(LW * LH);
+        for (let i = 0; i < LW * LH; i++) light[i] = (d[i*4] * .3 + d[i*4+1] * .5 + d[i*4+2] * .2) / 255;
+      } catch (e) { light = null; }
+    }
+    const lit = (x, y) => { if (!light) return .5; const i = Math.max(0, Math.min(LW - 1, x / IW * LW | 0)), j = Math.max(0, Math.min(LH - 1, y / IH * LH | 0)); return light[j * LW + i]; };
+    const R = (a, b) => a + Math.random() * (b - a);
+    const SLANT = 0.16;
+    const streaks = [];
+    function newStreak(far, anyY){
+      return { x: R(-100, IW + 60), y: anyY ? R(-60, IH) : R(-120, -10), far,
+               len: far ? R(9, 16) : R(26, 46), v: far ? R(1100, 1400) : R(1700, 2200), w: far ? 1.0 : 1.7 };
+    }
+    for (let i = 0; i < 380; i++) streaks.push(newStreak(true, true));
+    for (let i = 0; i < 110; i++) streaks.push(newStreak(false, true));
+    // the wet ground between the walls, wider towards the bottom
+    function groundPoint(){
+      const y = R(640, 1015), t = (y - 640) / 375;
+      return { x: R(520 - 330 * t, 1010 + 330 * t), y, k: .55 + t * .9 };
+    }
+    const splashes = [];
+    // lightning: a few quick flickers across the sky, thunder follows a moment later
+    const FLICKER = [[0, 0], [40, .95], [110, .18], [170, .75], [260, .08], [330, .5], [700, 0]];
+    let flashAt = 0, flashT = -1;
+    function flashLevel(now){
+      if (!flashAt) flashAt = now + R(6000, 14000);
+      if (flashT < 0) {
+        if (now >= flashAt) { flashT = now; Sound.thunder(R(.9, 2.6)); }
+        return 0;
+      }
+      const t = now - flashT;
+      for (let i = 1; i < FLICKER.length; i++) {
+        if (t <= FLICKER[i][0]) { const [t0, v0] = FLICKER[i - 1], [t1, v1] = FLICKER[i]; return v0 + (v1 - v0) * (t - t0) / (t1 - t0); }
+      }
+      flashT = -1; flashAt = now + R(25000, 55000); return 0;
+    }
+    let last = performance.now(), splashAcc = 0;
+    function frame(now){
+      requestAnimationFrame(frame);
+      if (!scene.classList.contains('active')) { last = now; return; }
+      const dt = Math.min(.05, (now - last) / 1000); last = now;
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+      // falling rain, drawn in picture coordinates
+      cx.save(); cx.translate(ox, oy); cx.scale(s, s);
+      cx.lineCap = 'round';
+      for (const p of streaks) {
+        p.y += p.v * dt; p.x += p.v * SLANT * dt;
+        if (p.y > IH + 20) Object.assign(p, newStreak(p.far, false));
+        const L = lit(p.x, p.y), a = (p.far ? .17 : .34) * (.55 + L * 2.4);
+        cx.strokeStyle = `rgba(220,230,240,${Math.min(.8, a).toFixed(3)})`; cx.lineWidth = p.w;
+        cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(p.x - p.len * SLANT, p.y - p.len); cx.stroke();
+      }
+      // splashes and ripples on the ground
+      splashAcc += dt * 55;
+      while (splashAcc > 1) { splashAcc--; const g = groundPoint(); splashes.push({ ...g, t: 0, kids: [0,1,2].map(() => ({ dx: R(-1, 1), dy: R(-1.6, -.8) })) }); }
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const p = splashes[i]; p.t += dt; const u = p.t / .45;
+        if (u >= 1) { splashes.splice(i, 1); continue; }
+        const L = .5 + lit(p.x, p.y) * 2.4, rx = (2 + u * 9) * p.k;
+        cx.strokeStyle = `rgba(220,230,240,${((1 - u) * .32 * L).toFixed(3)})`; cx.lineWidth = .8 * p.k;
+        cx.beginPath(); cx.ellipse(p.x, p.y, rx, rx * .32, 0, 0, Math.PI * 2); cx.stroke();
+        if (u < .45) {
+          cx.fillStyle = `rgba(225,235,245,${((1 - u / .45) * .4 * L).toFixed(3)})`;
+          for (const k of p.kids) { const q = u / .45; cx.fillRect(p.x + k.dx * 6 * q * p.k, p.y + (k.dy * 7 * q + 9 * q * q) * p.k, 1.1 * p.k, 1.1 * p.k); }
+        }
+      }
+      // the flash lights the sky most, the walls and ground a little
+      const f = flashLevel(now);
+      if (f > 0) {
+        const sky = cx.createLinearGradient(0, 0, 0, 520);
+        sky.addColorStop(0, `rgba(215,225,255,${(f * .55).toFixed(3)})`); sky.addColorStop(.6, `rgba(200,212,255,${(f * .22).toFixed(3)})`); sky.addColorStop(1, 'rgba(200,212,255,0)');
+        cx.fillStyle = sky; cx.fillRect(0, 0, IW, 520);
+        cx.fillStyle = `rgba(190,205,255,${(f * .1).toFixed(3)})`; cx.fillRect(0, 0, IW, IH);
+      }
+      cx.restore();
+    }
+    fit(); window.addEventListener('resize', fit);
+    if (img.complete) makeLight(); else img.addEventListener('load', makeLight);
+    requestAnimationFrame(frame);
+  })();
+
+
+  // ===== Limo: a short bumpy drive with rain on the glass, then arrival =====
+  (function limo(){
+    const scene = document.getElementById('scene-limo'), ride = document.querySelector('.limo-ride');
+    const line = document.getElementById('limoLine'), btn = document.getElementById('stepOut');
+    const cv = document.getElementById('limoRain'), cx = cv.getContext('2d');
+    const IW = 1672, IH = 941;
+    const SIDE_L = [[0,72],[40,55],[285,168],[298,200],[262,420],[0,425]];
+    const SIDE_R = [[1672,72],[1632,55],[1387,168],[1374,200],[1410,420],[1672,425]];
+    const SCREEN = [[745,258],[925,258],[925,330],[745,330]];
+    const GLASS = [SIDE_L, SIDE_R, SCREEN];
+    const STOP_AT = 5.0, TEXT_IN = 5.3, TEXT_OUT = 7.3, BUTTON_IN = 7.9;   // seconds
+    let W = 0, H = 0, s = 1, ox = 0, oy = 0, dpr = 1;
+    function fit(){
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = scene.clientWidth; H = scene.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      s = Math.min(W / IW, H / IH); ox = (W - IW * s) / 2; oy = (H - IH * s) / 2;
+    }
+    const R = (a, b) => a + Math.random() * (b - a);
+    function inPoly(p, x, y){ let c = false; for (let i = 0, j = p.length - 1; i < p.length; j = i++) { const [xi, yi] = p[i], [xj, yj] = p[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+    function spot(k){ const p = GLASS[k]; const xs = p.map(q => q[0]), ys = p.map(q => q[1]); let x, y, n = 0; do { x = R(Math.min(...xs), Math.max(...xs)); y = R(Math.min(...ys), Math.max(...ys)); } while (!inPoly(p, x, y) && ++n < 50); return { x, y }; }
+    function clipTo(c, polys){ c.beginPath(); polys.forEach(p => { c.moveTo(p[0][0], p[0][1]); p.slice(1).forEach(q => c.lineTo(q[0], q[1])); c.closePath(); }); c.clip(); }
+    const pickK = () => Math.random() < .42 ? 0 : Math.random() < .8 ? 1 : 2;
+    const beads = [];
+    for (let i = 0; i < 200; i++) { const k = pickK(), p = spot(k); beads.push({ k, ...p, r: R(.8, 2.2) * (k < 2 ? 1 : .6), a: R(.25, .6) }); }
+    const runs = [];
+    function newRun(){ const k = Math.random() < .5 ? 0 : 1, p = spot(k); return { k, x: p.x, y: p.y, v: R(18, 70), r: R(1.4, 2.6), trail: [], wob: R(0, 6) }; }
+    for (let i = 0; i < 12; i++) runs.push(newRun());
+    let t0 = null, last = 0, wiperT = .3, step = 0;
+    function reset(){ t0 = null; step = 0; wiperT = .3; ride.classList.remove('stopped'); line.classList.remove('show'); btn.classList.remove('show'); }
+    function frame(now){
+      requestAnimationFrame(frame);
+      if (!scene.classList.contains('active')) { last = now; return; }
+      // wait until the limo can actually be seen; if it's hidden part way through, start again
+      const lock = document.getElementById('rotate-lock');
+      if (document.hidden || (lock && getComputedStyle(lock).display !== 'none')) { if (t0 !== null) reset(); last = now; return; }
+      if (t0 === null) { t0 = now; last = now; }
+      const t = (now - t0) / 1000, dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (step === 0 && t >= STOP_AT) { step = 1; ride.classList.add('stopped'); }
+      if (step === 1 && t >= TEXT_IN) { step = 2; line.classList.add('show'); }
+      if (step === 2 && t >= TEXT_OUT) { step = 3; line.classList.remove('show'); }
+      if (step === 3 && t >= BUTTON_IN) { step = 4; btn.classList.add('show'); }
+      const moving = t < STOP_AT;
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+      cx.save(); cx.translate(ox, oy); cx.scale(s, s); clipTo(cx, GLASS);
+      for (const b of beads) {
+        cx.fillStyle = `rgba(255,214,170,${(b.a * .35).toFixed(3)})`; cx.beginPath(); cx.arc(b.x, b.y, b.r, 0, Math.PI * 2); cx.fill();
+        cx.fillStyle = `rgba(255,240,220,${(b.a * .55).toFixed(3)})`; cx.fillRect(b.x - b.r * .4, b.y - b.r * .5, b.r * .35, b.r * .35);
+      }
+      for (let i = runs.length - 1; i >= 0; i--) {
+        const d = runs[i]; d.trail.push({ x: d.x, y: d.y }); if (d.trail.length > 70) d.trail.shift();
+        d.y += d.v * dt; d.x += Math.sin(now / 400 + d.wob) * .12 + (moving ? (d.k ? 1 : -1) * 14 * dt : 0);
+        if (!inPoly(GLASS[d.k], d.x, d.y)) { runs[i] = newRun(); continue; }
+        cx.strokeStyle = 'rgba(255,220,180,0.10)'; cx.lineWidth = d.r * .9; cx.lineCap = 'round';
+        cx.beginPath(); d.trail.forEach((q, j) => j ? cx.lineTo(q.x, q.y) : cx.moveTo(q.x, q.y)); cx.stroke();
+        cx.fillStyle = 'rgba(255,220,185,0.32)'; cx.beginPath(); cx.ellipse(d.x, d.y, d.r, d.r * 1.25, 0, 0, Math.PI * 2); cx.fill();
+      }
+      if (Math.random() < .6) { const k = pickK(), p = spot(k); beads.push({ k, ...p, r: R(.8, 2) * (k < 2 ? 1 : .6), a: R(.25, .6) }); if (beads.length > 320) beads.splice(0, 1); }
+      if (t > wiperT) {
+        const u = (t - wiperT) / .7;
+        if (u >= 1) wiperT = t + (moving ? 1.1 : 2.2);
+        else {
+          const ang = -2.6 + Math.sin(u * Math.PI) * 2.1, px = 790, py = 352, L = 150;
+          cx.strokeStyle = 'rgba(8,8,8,0.95)'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(px, py); cx.lineTo(px + Math.cos(ang) * L, py + Math.sin(ang) * L); cx.stroke();
+          for (let i = beads.length - 1; i >= 0; i--) { const b = beads[i]; if (b.k === 2 && Math.abs(Math.atan2(b.y - py, b.x - px) - ang) < .12) beads.splice(i, 1); }
+        }
+      }
+      cx.restore();
+    }
+    fit(); window.addEventListener('resize', fit);
+    requestAnimationFrame(frame);
+  })();
+
+</script>
+
+</body>
+</html>
